@@ -38,7 +38,6 @@ Homepage = "https://github.com/weijiahuang/quinny"
 Repository = "https://github.com/weijiahuang/quinny"
 Documentation = "https://github.com/weijiahuang/quinny/blob/main/docs/LANGUAGE_SPEC.md"
 Issues = "https://github.com/weijiahuang/quinny/issues"
-Changelog = "https://github.com/weijiahuang/quinny/blob/main/CHANGELOG.md"
 
 [project.scripts]
 quinny = "quinny.cli:main"

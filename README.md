@@ -152,15 +152,15 @@ The `.qn` plan is the durable artifact: readable, editable, diffable, reusable.
 ## Status
 
 Implemented: parser, task-graph builder + validator, planner, code generator,
-verify/repair loop, `main.py` assembly, CLI. See
-[CHANGELOG.md](CHANGELOG.md).
+verify/repair loop, `main.py` assembly, CLI.
 
 Roadmap: a JSON/schema plan format (for dependency-free tooling), parallel node
 execution, and code-gen targets beyond Python.
 
 ## Contributing
 
-Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and PRs welcome. Please keep the language small (the v0.1 surface is 10
+keywords on purpose) and add a test for any parser/graph/validator change.
 
 ## License
 
