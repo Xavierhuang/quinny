@@ -1,0 +1,18 @@
+project NotifyActiveUsers
+
+task Notify
+    goal
+        Every active user receives exactly one email.
+    input
+        users
+    constraint
+        No duplicate emails per user.
+        Retry failures up to 3 times.
+        Parallel execution allowed.
+        Log every failure.
+    success
+        100% delivery to active users.
+    test
+        Inactive users are not notified.
+        A transient failure is retried.
+        A permanent failure is logged.

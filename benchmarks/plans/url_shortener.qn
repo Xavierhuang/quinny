@@ -1,0 +1,54 @@
+project UrlShortenerLib
+
+component Base62Codec
+    goal
+        Encode non-negative integers to fixed 6-character base62 strings and decode them back.
+
+component SequenceCounter
+    goal
+        Generate a monotonically increasing integer identifier.
+
+component UrlCodeIndex
+    goal
+        Store the mapping from a long URL to its assigned short code.
+
+component CodeUrlIndex
+    goal
+        Store the mapping from a short code back to its long URL.
+
+task Shorten
+    goal
+        Return a stable 6-character base62 short code for a given long URL.
+    input
+        long_url
+    output
+        short_code
+    constraint
+        short_code is exactly six base62 characters.
+    constraint
+        Repeated calls with the same long_url return the same short_code.
+    depends
+        SequenceCounter
+        UrlCodeIndex
+        CodeUrlIndex
+        Base62Codec
+    test
+        Shortening identical URLs twice returns the same short code.
+    test
+        Shortening different URLs returns different short codes.
+    success
+        The produced short_code resolves to the original long_url.
+
+task Resolve
+    goal
+        Retrieve the long URL associated with a short code.
+    input
+        short_code
+    output
+        long_url
+    depends
+        CodeUrlIndex
+    test
+        Resolving a code produced by Shorten returns the original URL.
+    success
+        The returned long_url matches the one given to Shorten.

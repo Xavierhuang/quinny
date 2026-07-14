@@ -1,0 +1,1 @@
+A pure-Python URL shortener library (no HTTP server). Exposes shorten(long_url) -> short_code and resolve(short_code) -> long_url. Short codes are 6-character base62 strings derived from a monotonically increasing internal counter. Repeated shorten() calls on the same URL return the same code.

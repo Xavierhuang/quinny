@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+.venv-arm64/
+.pytest_cache/
+.lingcode/
+.smoke_out/
+.mcp.json
+
+# generated benchmark run output
+benchmarks/.work/
+benchmarks/plans.opus.bak/

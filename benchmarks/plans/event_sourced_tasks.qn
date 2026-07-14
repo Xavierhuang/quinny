@@ -1,0 +1,213 @@
+project EventSourcedTaskManager
+
+component EventLog
+    goal
+        Append-only JSON log storing every immutable event.
+    output
+        event_records
+    constraint
+        Events are never mutated or deleted, only appended.
+    constraint
+        Standard library only; JSON file on disk.
+
+component EventSchema
+    goal
+        Define the shape and required fields of every event type.
+    output
+        event_types
+    constraint
+        Supports add_task, complete_task events at minimum.
+
+component EventValidator
+    goal
+        Reject events that would violate domain invariants before they enter the log.
+    input
+        candidate_event
+        current_state
+    output
+        validation_result
+    depends
+        EventSchema
+    test
+        Completing a nonexistent task is rejected.
+    test
+        Completing an already-completed task is rejected.
+    test
+        Adding a task with a duplicate id is rejected.
+
+component StateFold
+    goal
+        Derive current task state by folding events left-to-right from an initial state.
+    input
+        initial_state
+        event_records
+    output
+        current_state
+    depends
+        EventSchema
+    constraint
+        Pure function; no side effects.
+    test
+        Folding an empty log yields the empty initial state.
+    test
+        Folding then re-folding the same events yields identical state.
+
+component Snapshot
+    goal
+        Serialize the current derived state plus the last event offset to disk.
+    input
+        current_state
+        last_offset
+    output
+        snapshot_file
+    depends
+        StateFold
+    constraint
+        Stored as JSON in the standard library only.
+
+task AddTask
+    goal
+        Append a validated task-creation event to the log.
+    input
+        title
+        tags
+        due_date
+    output
+        new_event
+    depends
+        EventLog
+        EventValidator
+    test
+        A new task appears in list-tasks after adding.
+    success
+        The added event is durable in the JSON log.
+
+task CompleteTask
+    goal
+        Append a validated task-completion event to the log.
+    input
+        task_id
+    output
+        new_event
+    depends
+        EventLog
+        EventValidator
+    test
+        A completed task is marked done in derived state.
+    success
+        Completing twice is rejected by the validator.
+
+task ListTasks
+    goal
+        Return the current tasks derived by folding the event log.
+    output
+        task_list
+    depends
+        EventLog
+        StateFold
+
+task Undo
+    goal
+        Logically revert the most recent user command by appending a compensating event.
+    output
+        undo_event
+    depends
+        EventLog
+        EventValidator
+    constraint
+        Undo itself is recorded as an event, never a log deletion.
+    test
+        Undo after add-task removes the task from derived state.
+
+task Redo
+    goal
+        Reapply the most recently undone command by appending a redo event.
+    output
+        redo_event
+    depends
+        EventLog
+        EventValidator
+        Undo
+    test
+        Redo after undo restores the prior derived state.
+
+task SnapshotCompaction
+    goal
+        Write a snapshot of current state and mark older events as compactable.
+    depends
+        Snapshot
+        StateFold
+        EventLog
+    test
+        A snapshot file is produced containing the current derived state.
+
+task ReplayFromSnapshot
+    goal
+        Rehydrate state by loading the latest snapshot and folding only newer events.
+    output
+        current_state
+    depends
+        Snapshot
+        StateFold
+        EventLog
+    test
+        Replay from snapshot yields the same state as a full fold from empty.
+    success
+        Startup time is reduced by skipping pre-snapshot events.
+
+task QueryEngine
+    goal
+        Filter derived tasks by status, tag, or inclusive date range.
+    input
+        status_filter
+        tag_filter
+        date_range
+    output
+        matching_tasks
+    depends
+        StateFold
+        EventLog
+    test
+        Filtering by status returns only tasks in that status.
+    test
+        Filtering by tag returns only tasks carrying that tag.
+    test
+        Filtering by date range excludes tasks outside the range.
+
+task CLI
+    goal
+        Expose add-task, complete-task, list-tasks, undo, redo, snapshot, and replay commands on the terminal.
+    depends
+        AddTask
+        CompleteTask
+        ListTasks
+        Undo
+        Redo
+        SnapshotCompaction
+        ReplayFromSnapshot
+        QueryEngine
+    constraint
+        Uses only argparse from the standard library.
+
+task TestSuite
+    goal
+        Self-contained tests covering validation, folding, undo/redo, snapshots, and queries.
+    depends
+        EventValidator
+        StateFold
+        Undo
+        Redo
+        SnapshotCompaction
+        ReplayFromSnapshot
+        QueryEngine
+    constraint
+        Runs with the standard library unittest module only.
+
+task DemoMain
+    goal
+        A main.py script that exercises the full add, complete, undo, redo, snapshot, and replay flow end to end.
+    depends
+        CLI
+        TestSuite
+    success
+        Running python main.py demonstrates every command working against a fresh log.

@@ -1,0 +1,68 @@
+project InstagramClone
+
+component Postgres
+    goal
+        Managed relational database.
+
+component Database
+    goal
+        Durable storage for users, posts, and follows.
+    uses
+        Postgres
+
+component AuthService
+    goal
+        Issue and verify session tokens.
+    uses
+        Database
+
+task Login
+    goal
+        Authenticate users securely.
+    input
+        email
+        password
+    output
+        jwt_token
+    constraint
+        Under 300ms p95 latency.
+        OAuth providers supported.
+    depends
+        AuthService
+    test
+        Invalid password is rejected.
+        Locked accounts cannot log in.
+    success
+        Valid credentials reach the feed screen.
+
+task Feed
+    goal
+        Show a chronologically ordered feed of followed users' posts.
+    output
+        feed_page
+    constraint
+        First paint under 500ms on 4G.
+        Works offline with cached posts.
+    depends
+        Login
+        Database
+    success
+        The feed loads for every logged-in user.
+
+task Stories
+    goal
+        24-hour ephemeral posts appear above the feed.
+    depends
+        Login
+        Database
+    constraint
+        Stories expire exactly 24h after upload.
+
+task Notifications
+    goal
+        Users are notified of follows, likes, and comments.
+    depends
+        Feed
+        Stories
+    constraint
+        Push notifications respect user quiet hours.

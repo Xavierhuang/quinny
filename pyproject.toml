@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quinny"
+version = "0.1.0"
+description = "A task-oriented intent language for AI coding agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Weijia Huang" }]
+keywords = ["ai", "codegen", "intent-language", "dsl", "llm", "planning", "agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Compilers",
+]
+dependencies = [
+    "lark>=1.1.9",
+    "networkx>=3.0",
+    "rich>=13.0",
+    "anthropic>=0.90.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "build>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/weijiahuang/quinny"
+Repository = "https://github.com/weijiahuang/quinny"
+Documentation = "https://github.com/weijiahuang/quinny/blob/main/docs/LANGUAGE_SPEC.md"
+Issues = "https://github.com/weijiahuang/quinny/issues"
+Changelog = "https://github.com/weijiahuang/quinny/blob/main/CHANGELOG.md"
+
+[project.scripts]
+quinny = "quinny.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["quinny*"]
+
+[tool.setuptools.package-data]
+quinny = ["grammar.lark"]

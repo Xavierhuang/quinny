@@ -1,0 +1,54 @@
+project InMemoryTodoService
+
+component InMemoryStore
+    goal
+        Hold the current set of todos in memory only.
+    constraint
+        Data is not persisted between runs.
+
+component IdGenerator
+    goal
+        Produce unique positive integer identifiers for todos.
+    constraint
+        Identifiers are positive integers and never repeat within a run.
+
+task AddTodo
+    goal
+        Add a new todo and return its unique identifier.
+    input
+        title
+    output
+        id
+    depends
+        InMemoryStore
+        IdGenerator
+    test
+        Adding a todo returns a positive integer id.
+    success
+        The new todo is stored and its id is returned.
+
+task ListTodos
+    goal
+        Return every todo currently stored.
+    output
+        todos
+    depends
+        InMemoryStore
+    test
+        Listing todos returns all stored todos.
+    success
+        The caller receives the current list of todos.
+
+task RemoveTodo
+    goal
+        Remove the todo with the given identifier and report success.
+    input
+        id
+    output
+        removed
+    depends
+        InMemoryStore
+    test
+        Removing an existing todo returns true.
+    success
+        The todo is no longer present if it existed.

@@ -1,0 +1,56 @@
+// Quinny v0.1 grammar (Lark, with Python-style indentation).
+//
+// The Indenter postlex (see parser.py) converts _NL tokens into
+// _INDENT / _DEDENT tokens whenever leading whitespace changes.
+
+%declare _INDENT _DEDENT
+
+start: _NL* project_decl _NL body
+body: (_NL | decl)*
+
+project_decl: "project" NAME
+
+decl: task_decl | component_decl
+
+// A task/component body can contain fields AND nested task/component
+// declarations. Nested decls model hierarchical decomposition — big tasks
+// split into subtasks. Names remain globally unique across the whole file.
+task_decl:      "task"      NAME _NL _INDENT (field | task_decl | component_decl)+ _DEDENT
+component_decl: "component" NAME _NL _INDENT (field | uses_field | task_decl | component_decl)+ _DEDENT
+
+field: goal_field
+     | input_field
+     | output_field
+     | constraint_field
+     | depends_field
+     | test_field
+     | success_field
+
+goal_field:       "goal"       _NL _INDENT text_block _DEDENT
+constraint_field: "constraint" _NL _INDENT text_block _DEDENT
+test_field:       "test"       _NL _INDENT text_block _DEDENT
+success_field:    "success"    _NL _INDENT text_block _DEDENT
+
+input_field:   "input"   _NL _INDENT name_block _DEDENT
+output_field:  "output"  _NL _INDENT name_block _DEDENT
+depends_field: "depends" _NL _INDENT name_block _DEDENT
+uses_field:    "uses"    _NL _INDENT name_block _DEDENT
+
+text_block: (TEXT_LINE _NL)+
+name_block: (NAME _NL)+
+
+// A prose line: starts with a non-whitespace, non-'#' char and runs to EOL.
+// Priority -1 so a keyword at column 0 is preferred over TEXT_LINE.
+TEXT_LINE.-1: /[^\s#][^\n]*/
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+
+// Newline plus any trailing indentation, optionally with comment lines
+// absorbed. The Indenter reads the final line's trailing whitespace to emit
+// _INDENT / _DEDENT. Comments are folded into _NL so a comment on its own
+// line doesn't produce a stray token between fields.
+_NL: (/\r?\n[\t ]*/ | COMMENT)+
+
+COMMENT: /\#[^\n]*/
+
+%ignore /[ \t]+/

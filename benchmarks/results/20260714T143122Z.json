@@ -1,0 +1,83 @@
+{
+  "started_at": "20260714T143122Z",
+  "runs": [
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "opus+haiku",
+      "run_index": 0,
+      "tokens_input": 31216,
+      "tokens_output": 22522,
+      "tokens_total": 53738,
+      "files_generated": 17,
+      "verify_passed": 14,
+      "full_verified": 11,
+      "main_runs": false,
+      "error": ""
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "opus+haiku",
+      "run_index": 1,
+      "tokens_input": 31184,
+      "tokens_output": 23650,
+      "tokens_total": 54834,
+      "files_generated": 17,
+      "verify_passed": 17,
+      "full_verified": 13,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "raw-opus",
+      "run_index": 0,
+      "tokens_input": 13407,
+      "tokens_output": 12288,
+      "tokens_total": 25695,
+      "files_generated": 4,
+      "verify_passed": 4,
+      "full_verified": 0,
+      "main_runs": false,
+      "error": "main.py not found"
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "raw-opus",
+      "run_index": 1,
+      "tokens_input": 13477,
+      "tokens_output": 12288,
+      "tokens_total": 25765,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 0,
+      "main_runs": false,
+      "error": "main.py not found"
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "raw-haiku",
+      "run_index": 0,
+      "tokens_input": 310,
+      "tokens_output": 4096,
+      "tokens_total": 4406,
+      "files_generated": 3,
+      "verify_passed": 3,
+      "full_verified": 3,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "raw-haiku",
+      "run_index": 1,
+      "tokens_input": 13404,
+      "tokens_output": 12288,
+      "tokens_total": 25692,
+      "files_generated": 4,
+      "verify_passed": 4,
+      "full_verified": 0,
+      "main_runs": false,
+      "error": "main.py not found"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+A safe expression calculator library. Exposes evaluate(expression: str) -> float, supporting +, -, *, /, parentheses, and floating-point literals. Rejects any input containing letters, dunder names, or any non-arithmetic characters. Division by zero raises ValueError with a clear message.

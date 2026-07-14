@@ -1,0 +1,16 @@
+project SimpleLogin
+
+task Login
+    goal
+        Authenticate a user with email and password.
+    input
+        email
+        password
+    output
+        jwt_token
+    constraint
+        Under 200ms latency.
+    test
+        Invalid password is rejected.
+    success
+        Valid credentials produce a token.

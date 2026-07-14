@@ -1,0 +1,31 @@
+{
+  "started_at": "20260714T053136Z",
+  "runs": [
+    {
+      "prompt": "todo_service",
+      "config": "all-opus",
+      "run_index": 0,
+      "tokens_input": 9786,
+      "tokens_output": 3434,
+      "tokens_total": 13220,
+      "files_generated": 6,
+      "verify_passed": 6,
+      "full_verified": 6,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "todo_service",
+      "config": "opus+haiku",
+      "run_index": 0,
+      "tokens_input": 8251,
+      "tokens_output": 2870,
+      "tokens_total": 11121,
+      "files_generated": 6,
+      "verify_passed": 6,
+      "full_verified": 6,
+      "main_runs": true,
+      "error": ""
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "project": "EventSourcedTaskManager",
+  "declarations": [
+    {
+      "kind": "component",
+      "name": "EventLog",
+      "goal": "Append-only JSON log storing immutable events with monotonic ids and timestamps.",
+      "constraint": [
+        "Events are never mutated or deleted; only appended.",
+        "Log is serialized as JSON, standard library only."
+      ],
+      "output": [
+        "EventRecord"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "EventRecord",
+      "goal": "Define the immutable event schema (id, timestamp, type, payload) shared by all commands.",
+      "constraint": [
+        "Every event carries a unique monotonic id and ISO-8601 timestamp."
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "TaskState",
+      "goal": "Represent the derived in-memory state of tasks produced by folding events.",
+      "output": [
+        "TaskModel"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "TaskModel",
+      "goal": "Define the Task record with id, title, tags, status, created/completed timestamps."
+    },
+    {
+      "kind": "component",
+      "name": "EventValidator",
+      "goal": "Reject events that would violate invariants such as completing unknown or already-completed tasks.",
+      "uses": [
+        "EventRecord",
+        "TaskState"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "Reducer",
+      "goal": "Pure function folding an event stream into a TaskState.",
+      "uses": [
+        "EventRecord",
+        "TaskState",
+        "EventValidator"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "SnapshotStore",
+      "goal": "Persist and load JSON snapshots of TaskState tagged with the last event id they cover.",
+      "uses": [
+        "TaskState",
+        "EventLog"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "UndoRedoStack",
+      "goal": "Track applied and reverted event ids so undo/redo can replay a truncated event stream.",
+      "uses": [
+        "EventLog",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "QueryEngine",
+      "goal": "Answer queries over TaskState by status, tag, or date range.",
+      "uses": [
+        "TaskState",
+        "TaskModel"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "AddTask",
+      "goal": "Append an AddTask event that introduces a new task after validation.",
+      "uses": [
+        "EventLog",
+        "EventValidator",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "CompleteTask",
+      "goal": "Append a CompleteTask event marking an existing open task complete.",
+      "uses": [
+        "EventLog",
+        "EventValidator",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "ListTasks",
+      "goal": "Return current tasks, optionally filtered via the query engine.",
+      "uses": [
+        "Reducer",
+        "QueryEngine"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "Undo",
+      "goal": "Revert the most recent user action by rewinding the event stream.",
+      "uses": [
+        "UndoRedoStack",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "Redo",
+      "goal": "Reapply the most recently undone action.",
+      "uses": [
+        "UndoRedoStack",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "Snapshot",
+      "goal": "Write a snapshot of the current derived state to the snapshot store.",
+      "uses": [
+        "SnapshotStore",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "task",
+      "name": "ReplayFromSnapshot",
+      "goal": "Load latest snapshot and fold only events newer than it to rebuild current state.",
+      "uses": [
+        "SnapshotStore",
+        "EventLog",
+        "Reducer"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "CLI",
+      "goal": "Expose all commands through a small argparse-based command line interface.",
+      "uses": [
+        "AddTask",
+        "CompleteTask",
+        "ListTasks",
+        "Undo",
+        "Redo",
+        "Snapshot",
+        "ReplayFromSnapshot"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "TestSuite",
+      "goal": "Self-contained unittest suite covering reducer purity, validator rejections, snapshot compaction, and undo/redo.",
+      "uses": [
+        "Reducer",
+        "EventValidator",
+        "SnapshotStore",
+        "UndoRedoStack",
+        "QueryEngine",
+        "AddTask",
+        "CompleteTask",
+        "Undo",
+        "Redo",
+        "Snapshot",
+        "ReplayFromSnapshot"
+      ]
+    },
+    {
+      "kind": "component",
+      "name": "DemoMain",
+      "goal": "A main.py that exercises add, complete, query, snapshot, undo, redo, and replay end-to-end.",
+      "uses": [
+        "CLI",
+        "AddTask",
+        "CompleteTask",
+        "ListTasks",
+        "Undo",
+        "Redo",
+        "Snapshot",
+        "ReplayFromSnapshot"
+      ]
+    }
+  ]
+}

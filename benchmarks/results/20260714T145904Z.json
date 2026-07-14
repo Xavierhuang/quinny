@@ -1,0 +1,44 @@
+{
+  "started_at": "20260714T145904Z",
+  "runs": [
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "opus+haiku",
+      "run_index": 0,
+      "tokens_input": 30306,
+      "tokens_output": 23040,
+      "tokens_total": 53346,
+      "files_generated": 17,
+      "verify_passed": 17,
+      "full_verified": 13,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "opus+haiku",
+      "run_index": 1,
+      "tokens_input": 30017,
+      "tokens_output": 22620,
+      "tokens_total": 52637,
+      "files_generated": 17,
+      "verify_passed": 17,
+      "full_verified": 11,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "event_sourced_tasks",
+      "config": "opus+haiku",
+      "run_index": 2,
+      "tokens_input": 28958,
+      "tokens_output": 22574,
+      "tokens_total": 51532,
+      "files_generated": 17,
+      "verify_passed": 17,
+      "full_verified": 14,
+      "main_runs": true,
+      "error": ""
+    }
+  ]
+}

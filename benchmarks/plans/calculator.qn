@@ -1,0 +1,30 @@
+project SafeExpressionCalculator
+
+component Tokenizer
+    goal
+        Split arithmetic expressions into safe numeric and operator tokens.
+    constraint
+        Reject tokens containing letters, dunder names, or non-arithmetic characters.
+
+component ArithmeticEngine
+    goal
+        Compute the result of a tokenized arithmetic expression.
+    constraint
+        Raise ValueError with a clear message when division by zero occurs.
+
+task EvaluateExpression
+    goal
+        Provide the public evaluate API that returns a float for a valid arithmetic string.
+    input
+        expression
+    output
+        result
+    depends
+        Tokenizer
+        ArithmeticEngine
+    test
+        Reject input containing letters, dunder names, or non-arithmetic characters.
+        Raise ValueError with a clear message on division by zero.
+        Compute mixed expressions with parentheses and floating-point literals correctly.
+    success
+        Valid arithmetic expressions evaluate to the correct float result.

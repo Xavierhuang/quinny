@@ -1,0 +1,1 @@
+A tiny in-memory todo service. Provides add(title) -> id, list_all() -> list of todos, and remove(id) -> bool. Ids are positive integers that never repeat. Nothing is persisted between runs.

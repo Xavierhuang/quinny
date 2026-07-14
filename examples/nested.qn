@@ -1,0 +1,39 @@
+project NestedDemo
+
+task Frontend
+    goal
+        User-facing surface.
+
+    task Login
+        goal
+            Log a user in.
+        input
+            email
+            password
+        output
+            jwt_token
+        constraint
+            Rejects invalid passwords.
+        depends
+            AuthAPI
+
+    task Feed
+        goal
+            Show a chronological feed of posts.
+        depends
+            Login
+
+task Backend
+    goal
+        Server-side business logic.
+
+    task AuthAPI
+        goal
+            Verify credentials and issue tokens.
+        input
+            email
+            password
+        output
+            jwt_token
+        test
+            Wrong password returns None.

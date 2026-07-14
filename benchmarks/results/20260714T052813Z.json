@@ -1,0 +1,31 @@
+{
+  "started_at": "20260714T052813Z",
+  "runs": [
+    {
+      "prompt": "todo_service",
+      "config": "all-opus",
+      "run_index": 0,
+      "tokens_input": 10274,
+      "tokens_output": 4494,
+      "tokens_total": 14768,
+      "files_generated": 6,
+      "verify_passed": 6,
+      "full_verified": 6,
+      "main_runs": true,
+      "error": ""
+    },
+    {
+      "prompt": "todo_service",
+      "config": "opus+haiku",
+      "run_index": 0,
+      "tokens_input": 742,
+      "tokens_output": 210,
+      "tokens_total": 952,
+      "files_generated": 0,
+      "verify_passed": 0,
+      "full_verified": 0,
+      "main_runs": false,
+      "error": "BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'adaptive thinking is not supported on this model'}, 'request_id': 'req_011Cd1Q1Uc353u5ZT7pqUPCc'}"
+    }
+  ]
+}
