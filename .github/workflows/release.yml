@@ -1,14 +1,19 @@
 name: Release
 
-# Publishes to PyPI when you push a version tag, e.g. `git tag v0.1.0 && git push --tags`.
-# Requires a repository secret PYPI_API_TOKEN (PyPI → Account settings → API tokens).
+# Runs when you push a version tag, e.g. `git tag v0.1.0 && git push --tags`.
+#   - pypi:         builds sdist+wheel, publishes to PyPI (needs secret PYPI_API_TOKEN)
+#   - macos-binary: freezes a Python-free binary, attaches it to the GitHub Release
+#                   (this is what install.sh downloads on Apple Silicon)
 
 on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: write        # macos-binary job creates the Release + uploads assets
+
 jobs:
-  build-and-publish:
+  pypi:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,13 +22,37 @@ jobs:
           python-version: "3.12"
       - name: Build sdist + wheel
         run: |
-          python -m pip install --upgrade pip build
+          python -m pip install --upgrade pip build twine
           python -m build
-      - name: Check the artifacts
-        run: |
-          pip install twine
           twine check dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+  macos-binary:
+    runs-on: macos-14          # Apple Silicon runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Freeze the binary
+        run: |
+          python -m pip install --upgrade pip pyinstaller
+          pip install -e .
+          pyinstaller --clean --noconfirm quinny-arm64.spec
+      - name: Package + checksum
+        run: |
+          cd dist
+          # spec emits dist/quinny-arm64/ (onedir); normalize the dir name.
+          mv quinny-arm64 quinny
+          tar -czf quinny-macos-arm64.tar.gz quinny
+          shasum -a 256 quinny-macos-arm64.tar.gz > quinny-macos-arm64.tar.gz.sha256
+          ./quinny/quinny-arm64 --help    # smoke-test the frozen binary
+      - name: Attach to the Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/quinny-macos-arm64.tar.gz
+            dist/quinny-macos-arm64.tar.gz.sha256
