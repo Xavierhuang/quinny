@@ -25,7 +25,7 @@ of code is generated.
 
 ```bash
 # One-liner — installs the Python-free binary on Apple Silicon, else falls back to pip:
-curl -fsSL https://raw.githubusercontent.com/weijiahuang/quinny/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Xavierhuang/quinny/main/install.sh | sh
 
 # Or straight from PyPI (needs Python 3.10+):
 pip install quinny
@@ -33,12 +33,12 @@ pip install quinny
 
 The installer honors `QUINNY_METHOD=pip|binary`, `QUINNY_VERSION=vX.Y.Z`, and
 `QUINNY_PREFIX=<dir>`. Prebuilt binaries are attached to each
-[GitHub Release](https://github.com/weijiahuang/quinny/releases).
+[GitHub Release](https://github.com/Xavierhuang/quinny/releases).
 
 From source:
 
 ```bash
-git clone https://github.com/weijiahuang/quinny
+git clone https://github.com/Xavierhuang/quinny
 cd quinny
 pip install -e .
 ```

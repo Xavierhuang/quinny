@@ -1,7 +1,7 @@
 #!/bin/sh
 # Quinny installer.
 #
-#   curl -fsSL https://raw.githubusercontent.com/weijiahuang/quinny/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/Xavierhuang/quinny/main/install.sh | sh
 #
 # By default this installs the prebuilt, Python-free binary on Apple Silicon
 # macOS, and falls back to `pipx`/`pip` everywhere else. Override with:
@@ -12,7 +12,7 @@
 #   QUINNY_PREFIX=/usr/local sh  # install under a different prefix
 set -eu
 
-REPO="weijiahuang/quinny"
+REPO="Xavierhuang/quinny"
 PREFIX="${QUINNY_PREFIX:-$HOME/.local}"
 BIN_DIR="$PREFIX/bin"
 LIB_DIR="$PREFIX/share/quinny"

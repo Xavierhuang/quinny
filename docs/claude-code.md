@@ -26,7 +26,7 @@ globally:
 
 ```bash
 mkdir -p ~/.claude/commands
-curl -fsSL https://raw.githubusercontent.com/weijiahuang/quinny/main/.claude/commands/quinny.md \
+curl -fsSL https://raw.githubusercontent.com/Xavierhuang/quinny/main/.claude/commands/quinny.md \
   -o ~/.claude/commands/quinny.md
 ```
 
