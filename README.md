@@ -125,6 +125,13 @@ Full reference: **[docs/LANGUAGE_SPEC.md](docs/LANGUAGE_SPEC.md)**.
 Writing plans with an LLM: **[docs/AI_PROMPT.md](docs/AI_PROMPT.md)**.
 First-time walkthrough: **[docs/getting-started.md](docs/getting-started.md)**.
 
+## Using it with Claude Code
+
+Quinny is a CLI, so [Claude Code](https://claude.com/claude-code) can use it the
+moment it's installed — just ask it to *"use `quinny` to plan and build …"*. For a
+`/quinny` slash command and a paste-in `CLAUDE.md` block that teaches Claude when
+to reach for it, see **[docs/claude-code.md](docs/claude-code.md)**.
+
 ## When to use Quinny (honest scope)
 
 Quinny is **v0.1 / alpha**, and it is not free — a `build` makes many sequential
