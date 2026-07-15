@@ -36,13 +36,20 @@ write spec.qn  ──►  let any agent write/change the code  ──►  quinny
 | Re-prompting an LLM to "review this against the spec" every change | emit the suite **once**, run it free forever |
 | Re-specifying for each tool or model you try | one `.qn` gates them all, unchanged |
 
-**The token math** (real, measured with Haiku): generating a contract suite costs a
-**one-time ~2,600 tokens (~$0.008)** per spec change. After you emit and commit it,
-every CI run and every code change is verified for **0 tokens, deterministically**
-(`--suite`, no model in the loop). Your LLM spend is `O(spec changes)`, not
-`O(commits)` — push 50 times between spec edits and you still paid once. The payoff
-compounds when an agent refactors or you swap models: the contract stays fixed and
-catches the moment a change breaks a requirement, before it ships.
+**In real terms** (all measured, not estimated):
+
+- **~12 seconds** and **under a penny** to turn a spec into a ~140-line acceptance
+  suite — the same suite you'd otherwise hand-write in ~30 minutes.
+- **0.24 seconds** and **$0** to check *any* implementation against that committed
+  suite — no AI in the loop, every time, forever.
+
+**Say you try 10 implementations** before one sticks (you plus a couple of agents,
+iterating). Generate the contract *once* (~12 s, <1¢), then verify all ten — about
+**2.4 seconds total, $0**. Without it, you'd hand-write the tests once, or re-read
+all ten diffs against the spec yourself. And it keeps paying off: every later
+commit, refactor, or model swap is re-checked in a quarter-second, catching a broken
+requirement before it ships. Your AI cost scales with **spec changes, not commits** —
+50 pushes between spec edits still cost one ~12-second generation.
 
 ---
 
@@ -104,7 +111,10 @@ so CI runs it deterministically, with no model in the loop — see
 
 ### How reliable is the gate?
 
-Two benchmarks, both in [`benchmarks/`](benchmarks/):
+**In plain terms: across ~40 implementations — some correct, some deliberately
+broken — verify flagged every broken one and never once passed a bad one.** The
+single time it disagreed with a human-written test suite, it was being *stricter*,
+not letting a bug through. The measured detail, both benchmarks in [`benchmarks/`](benchmarks/):
 
 **Synthetic** — implementations with known, exact defects (`verify_usability.py`):
 
