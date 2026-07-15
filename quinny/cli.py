@@ -298,37 +298,52 @@ def cmd_gen(request: str, output: Path | None, model: str, max_retries: int) -> 
     return 0
 
 
-def cmd_verify(file: Path, impl: Path, model: str) -> int:
-    from quinny.contract import verify
+def cmd_verify(file: Path, impl: Path, model: str,
+               emit: Path | None = None, suite: Path | None = None) -> int:
+    from quinny.contract import verify, run_saved
     if not impl.is_dir():
         console.print(f"[red]error:[/red] {impl} is not a directory")
         return 2
-    console.print(f"Compiling acceptance criteria from [bold]{file.name}[/bold] "
-                  f"and verifying [bold]{impl}[/bold] (via {model})…\n")
-    results = verify(file, impl, model)
+    if suite is not None:
+        console.print(f"Running saved suite [bold]{suite.name}[/bold] against "
+                      f"[bold]{impl}[/bold] (no LLM)…\n")
+        results = run_saved(file, impl, suite)
+    else:
+        console.print(f"Compiling acceptance criteria from [bold]{file.name}"
+                      f"[/bold] and verifying [bold]{impl}[/bold] (via {model})…\n")
+        results = verify(file, impl, model, emit=emit)
     if not results:
         console.print("[yellow]No test/success criteria in this plan.[/yellow]")
         return 0
     from rich.table import Table
     table = Table(show_header=True, header_style="bold")
     table.add_column("#", justify="right")
-    table.add_column("node")
+    table.add_column("kind")
     table.add_column("criterion")
     table.add_column("result")
     mark = {"PASS": "[green]✓ PASS[/green]", "FAIL": "[red]✗ FAIL[/red]",
             "ERROR": "[red]✗ ERROR[/red]", "MISSING": "[yellow]— n/a[/yellow]"}
-    passed = 0
+    # Gate on concrete `test` criteria; `success` lines are usually high-level
+    # summaries (unfalsifiable), so they're advisory — shown, but they don't
+    # fail the build. This kills false-alarms on vague acceptance statements.
+    passed = total = 0
     for r in results:
-        if r.status == "PASS":
-            passed += 1
+        gating = r.criterion.kind == "test"
+        if gating:
+            total += 1
+            if r.status == "PASS":
+                passed += 1
         text = r.criterion.text
-        table.add_row(str(r.criterion.index), r.criterion.node,
-                      text[:70] + ("…" if len(text) > 70 else ""),
-                      mark.get(r.status, r.status))
+        kind_label = "test" if gating else "[dim]success (advisory)[/dim]"
+        result = mark.get(r.status, r.status)
+        if not gating:
+            result = f"[dim]{result}[/dim]"
+        table.add_row(str(r.criterion.index), kind_label,
+                      text[:66] + ("…" if len(text) > 66 else ""), result)
     console.print(table)
-    total = len(results)
     color = "green" if passed == total else ("red" if passed == 0 else "yellow")
-    console.print(f"\n[{color}]{passed}/{total} acceptance criteria satisfied[/{color}]")
+    console.print(f"\n[{color}]{passed}/{total} gating (test) criteria satisfied[/{color}]"
+                  f"  [dim](success lines advisory)[/dim]")
     return 0 if passed == total else 1
 
 
@@ -355,6 +370,12 @@ def main(argv: list[str] | None = None) -> int:
     ver.add_argument("impl", type=Path, help="Directory of code to verify.")
     ver.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"),
                      help="Model used to compile criteria into tests.")
+    ver.add_argument("--emit", type=Path, default=None,
+                     help="Write the generated pytest suite here (review it, "
+                          "commit it, then re-run deterministically in CI).")
+    ver.add_argument("--suite", type=Path, default=None,
+                     help="Run a previously emitted suite instead of generating "
+                          "one (no LLM call).")
 
     gen = sub.add_parser("gen", help="Translate English into Quinny via Claude.")
     gen.add_argument("request", help="Natural-language description of what to build.")
@@ -403,7 +424,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.cmd == "verify":
-            return cmd_verify(args.file, args.impl, args.model)
+            return cmd_verify(args.file, args.impl, args.model,
+                              args.emit, args.suite)
         if args.cmd == "gen":
             return cmd_gen(args.request, args.output, args.model, args.max_retries)
         if args.cmd == "build":

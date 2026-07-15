@@ -133,10 +133,22 @@ def run_suite(impl_dir: Path, suite_src: str,
     return [CriterionResult(c, status[c.index]) for c in criteria]
 
 
-def verify(plan_path: Path, impl_dir: Path, model: str) -> list[CriterionResult]:
+def verify(plan_path: Path, impl_dir: Path, model: str,
+           emit: Path | None = None) -> list[CriterionResult]:
     project = parse_file(plan_path)
     criteria = extract_criteria(project)
     if not criteria:
         return []
     suite = build_suite(plan_path.read_text(), impl_dir, criteria, model)
+    if emit is not None:
+        emit.write_text(suite if suite.endswith("\n") else suite + "\n")
     return run_suite(impl_dir, suite, criteria)
+
+
+def run_saved(plan_path: Path, impl_dir: Path,
+              suite_path: Path) -> list[CriterionResult]:
+    """Re-run a previously emitted suite — no LLM call. This is how you lock a
+    contract into CI: emit once, review, then run deterministically forever."""
+    project = parse_file(plan_path)
+    criteria = extract_criteria(project)
+    return run_suite(impl_dir, suite_path.read_text(), criteria)
