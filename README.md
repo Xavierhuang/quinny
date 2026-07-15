@@ -110,6 +110,16 @@ direction for a gate.
 0/6 every run). A committed suite is a plain pytest file — no model, no flakiness,
 safe to gate CI on.
 
+**Cross-language** (`verify_crosslang.py`, *experimental*) — the `.qn` contract is
+language-agnostic: `quinny verify --lang js` emits a Node `node:test` suite instead
+of pytest. The same `mini_kv` contract gates a correct **JavaScript** impl at 6/6.
+On the JS variant benchmark, verify kept its **0 false-PASS** safety property — it
+never green-lit broken JS — but a *small* generation model (Haiku) was noisier on
+JS than Python (63% accuracy, and every error a false-*alarm*, never a missed bug),
+because JS test-gen (clock injection, `assert.throws`) is harder. The
+emit→review→`--suite` flow is the fix — review the generated suite once, then it's
+deterministic — and reliability rises with a stronger generation model.
+
 Concrete `test` criteria **gate** the build; high-level `success` summaries are
 shown as **advisory** (they're often unfalsifiable, so they never fail your build).
 

@@ -298,20 +298,20 @@ def cmd_gen(request: str, output: Path | None, model: str, max_retries: int) -> 
     return 0
 
 
-def cmd_verify(file: Path, impl: Path, model: str,
+def cmd_verify(file: Path, impl: Path, model: str, lang: str = "python",
                emit: Path | None = None, suite: Path | None = None) -> int:
     from quinny.contract import verify, run_saved
     if not impl.is_dir():
         console.print(f"[red]error:[/red] {impl} is not a directory")
         return 2
     if suite is not None:
-        console.print(f"Running saved suite [bold]{suite.name}[/bold] against "
-                      f"[bold]{impl}[/bold] (no LLM)…\n")
-        results = run_saved(file, impl, suite)
+        console.print(f"Running saved {lang} suite [bold]{suite.name}[/bold] "
+                      f"against [bold]{impl}[/bold] (no LLM)…\n")
+        results = run_saved(file, impl, suite, lang=lang)
     else:
-        console.print(f"Compiling acceptance criteria from [bold]{file.name}"
-                      f"[/bold] and verifying [bold]{impl}[/bold] (via {model})…\n")
-        results = verify(file, impl, model, emit=emit)
+        console.print(f"Compiling acceptance criteria from [bold]{file.name}[/bold]"
+                      f" and verifying [bold]{impl}[/bold] ({lang}, via {model})…\n")
+        results = verify(file, impl, model, emit=emit, lang=lang)
     if not results:
         console.print("[yellow]No test/success criteria in this plan.[/yellow]")
         return 0
@@ -370,6 +370,9 @@ def main(argv: list[str] | None = None) -> int:
     ver.add_argument("impl", type=Path, help="Directory of code to verify.")
     ver.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"),
                      help="Model used to compile criteria into tests.")
+    ver.add_argument("--lang", choices=["python", "js"], default="python",
+                     help="Target language of the implementation (python=pytest, "
+                          "js=Node's built-in test runner).")
     ver.add_argument("--emit", type=Path, default=None,
                      help="Write the generated pytest suite here (review it, "
                           "commit it, then re-run deterministically in CI).")
@@ -425,7 +428,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.cmd == "verify":
             return cmd_verify(args.file, args.impl, args.model,
-                              args.emit, args.suite)
+                              args.lang, args.emit, args.suite)
         if args.cmd == "gen":
             return cmd_gen(args.request, args.output, args.model, args.max_retries)
         if args.cmd == "build":
