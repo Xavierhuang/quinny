@@ -1,23 +1,23 @@
 # Quinny
 
-**A task-oriented intent language for AI coding agents.**
+**An intent language that doubles as an executable acceptance contract.**
 
-Quinny sits *above* Python, Swift, TypeScript, Rust, etc. You describe **what**
-should be built — goals, inputs/outputs, dependencies, constraints, and how to
-verify it — and Quinny compiles that into a validated **task graph**, then drives
-an LLM to generate, verify, and assemble the actual code.
+You describe *what* should be built — goals, inputs/outputs, dependencies,
+constraints, and concrete acceptance `test`s — in a small, reviewable `.qn` file.
+Quinny turns those acceptance criteria into a runnable test suite and **verifies
+any implementation against them** — code written by a human, by Claude Code, by
+Cursor, by anything.
 
 ```
-English  →  Quinny (.qn)  →  Task Graph  →  Plan  →  Generated code (Python, …)
-             │                  │            │          │
-             │ 10 keywords      │ DAG +      │ layers    │ per-node LLM gen
-             │ indentation      │ validation │           │ + verify + repair
+intent.qn  ──►  quinny verify  ──►  ✓/✗ per acceptance criterion, on ANY code
+   │                    │
+   │ reviewable,        │ compiles your `test` criteria into a pytest suite,
+   │ diffable spec      │ runs it against the implementation, gates the build
 ```
 
-A `.qn` file is **not code that runs** — it is a structured, human-readable,
-version-controllable description of intent. `quinny check` catches missing
-components and broken dependencies *at plan time* (cheap), before a single line
-of code is generated.
+A `.qn` file is **not code that runs** — it's a structured, version-controllable
+description of intent *and* the contract that decides whether an implementation
+satisfies it. Write "done" once; enforce it forever, in CI.
 
 ---
 
@@ -33,86 +33,89 @@ pip install quinny
 
 The installer honors `QUINNY_METHOD=pip|binary`, `QUINNY_VERSION=vX.Y.Z`, and
 `QUINNY_PREFIX=<dir>`. Prebuilt binaries are attached to each
-[GitHub Release](https://github.com/Xavierhuang/quinny/releases).
+[GitHub Release](https://github.com/Xavierhuang/quinny/releases). From source:
+`git clone … && cd quinny && pip install -e .`. Requires Python 3.10+.
 
-From source:
+## Quickstart: verify an implementation against intent
 
-```bash
-git clone https://github.com/Xavierhuang/quinny
-cd quinny
-pip install -e .
-```
-
-Requires Python 3.10+.
-
-## Quickstart
-
-Write `hello.qn`:
+Write `todo.qn` — note the concrete `test` lines, they're the contract:
 
 ```
-project SimpleLogin
+project TodoService
 
-task Login
+component Store
     goal
-        Authenticate a user with email and password.
-    input
-        email
-        password
-    output
-        jwt_token
-    constraint
-        Under 200ms latency.
+        In-memory store mapping ids to todo items.
+
+task AddTodo
+    goal
+        Add a todo item and return its integer id; ids never repeat.
+    uses
+        Store
     test
-        Invalid password is rejected.
-    success
-        Valid credentials produce a token.
+        add("milk") returns an int; adding again returns a different id.
+    test
+        A removed id is no longer listed.
 ```
 
-Validate and inspect the plan (no LLM, no key needed):
+Validate the spec itself (no LLM, no key needed):
 
 ```bash
-quinny check hello.qn      # ✓ parses + graph is valid
-quinny plan  hello.qn      # execution layers
-quinny graph hello.qn      # the task graph
+quinny check todo.qn      # ✓ parses + graph is valid (missing deps, cycles)
 ```
 
-Generate code (needs credentials — see below):
+Then verify any implementation directory against the contract:
 
 ```bash
-quinny build hello.qn --full-verify --assemble -o out/
-# → out/login.py, out/shared_types.py, out/main.py, requirements.txt, README.md
+quinny verify todo.qn ./my_impl/           # compiles `test` criteria, runs them
+quinny verify todo.qn ./my_impl/ --emit contract_test.py   # save the suite…
+quinny verify todo.qn ./my_impl/ --suite contract_test.py  # …then re-run it, no LLM
 ```
+
+Output is a per-criterion PASS/FAIL table and a gate exit code. The
+**emit → review → `--suite`** flow locks the generated suite into a committed file
+so CI runs it deterministically, with no model in the loop — see
+**[docs/ci.md](docs/ci.md)** for the ready-to-copy GitHub Action.
+
+### How reliable is the gate?
+
+Measured on implementations with known, exact defects (`benchmarks/verify_usability.py`):
+
+| Metric | Result |
+|---|---|
+| False-PASS (green-lights a real defect) | **0 / 60** |
+| False-FAIL (fails correct code) | **0 / 60** |
+| Accuracy vs ground truth | **100%** |
+| Consistency across runs | **100%** |
+
+Concrete `test` criteria **gate** the build; high-level `success` summaries are
+shown as **advisory** (they're often unfalsifiable, so they never fail your build).
 
 ## The CLI
 
 | Command | What it does | Needs an LLM? |
 |---|---|---|
-| `quinny parse <file>`  | Parse a `.qn` to its AST | no |
-| `quinny check <file>`  | Parse + validate the task graph (missing deps, cycles) | no |
-| `quinny graph <file>`  | Print the task graph | no |
-| `quinny plan  <file>`  | Show execution layers (what can run in parallel) | no |
+| `quinny check <file>` | Parse + validate the task graph (missing deps, cycles) | no |
+| `quinny graph <file>` | Print the task graph | no |
+| `quinny plan  <file>` | Show execution layers | no |
+| `quinny verify <file> <impl/>` | Compile `test` criteria → run them against code → gate | **yes** (or `--suite`, no) |
 | `quinny gen "<english>"` | Translate English → a `.qn` plan | **yes** |
-| `quinny build <file>`  | Generate code from a `.qn` (per-node gen → verify → repair → assemble) | **yes** |
+| `quinny build <file>` | *(experimental)* generate code from a `.qn` | **yes** |
 
-`quinny build` flags: `--target python`, `-o <dir>`, `--full-verify`, `--assemble`,
-`--model <m>` (and per-stage `--types-model` / `--node-model` / `--repair-model` /
-`--assemble-model`), `--max-repair N`, `--only <node>`.
+`quinny verify` flags: `--emit <path>` (save the suite), `--suite <path>` (re-run a
+saved suite with no LLM), `--model <m>`.
 
 ## Credentials
 
-`gen` and `build` call an LLM. Quinny uses the Anthropic Python SDK, so it reads
-standard environment variables:
-
-- **Anthropic API key:** `export ANTHROPIC_API_KEY=sk-...`
-- **Any Anthropic-compatible proxy** (bring-your-own gateway): set
-  `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (Bearer). `QUINNY_MODEL` sets the
-  default model. Everything before `gen`/`build` (`parse`/`check`/`graph`/`plan`)
-  needs **no** credentials.
+`verify`/`gen`/`build` call an LLM via the Anthropic SDK: set `ANTHROPIC_API_KEY`,
+or point at any Anthropic-compatible proxy with `ANTHROPIC_BASE_URL` +
+`ANTHROPIC_AUTH_TOKEN`. `QUINNY_MODEL` sets the default model.
+`check`/`graph`/`plan` and `verify --suite` need **no** credentials.
 
 ## The language
 
 Ten keywords, indentation-sensitive, no loops or variables — those belong to the
-target language the agent emits:
+target language:
 
 ```
 project    task       component
@@ -121,46 +124,35 @@ constraint depends    uses
 test       success
 ```
 
-Full reference: **[docs/LANGUAGE_SPEC.md](docs/LANGUAGE_SPEC.md)**.
-Writing plans with an LLM: **[docs/AI_PROMPT.md](docs/AI_PROMPT.md)**.
-First-time walkthrough: **[docs/getting-started.md](docs/getting-started.md)**.
+Full reference: **[docs/LANGUAGE_SPEC.md](docs/LANGUAGE_SPEC.md)** ·
+Writing plans with an LLM: **[docs/AI_PROMPT.md](docs/AI_PROMPT.md)** ·
+Walkthrough: **[docs/getting-started.md](docs/getting-started.md)** ·
+With Claude Code: **[docs/claude-code.md](docs/claude-code.md)**.
 
-## Using it with Claude Code
+## A note on code generation (`quinny build`)
 
-Quinny is a CLI, so [Claude Code](https://claude.com/claude-code) can use it the
-moment it's installed — just ask it to *"use `quinny` to plan and build …"*. For a
-`/quinny` slash command and a paste-in `CLAUDE.md` block that teaches Claude when
-to reach for it, see **[docs/claude-code.md](docs/claude-code.md)**.
-
-## When to use Quinny (honest scope)
-
-Quinny is **v0.1 / alpha**, and it is not free — a `build` makes many sequential
-LLM calls, so it costs **more** tokens and time than a single "just write it"
-prompt. It earns that cost only on **genuinely complex, multi-component projects**
-where a one-shot attempt would miss a piece, leave a dependency dangling, or drift
-between files — the kind of failure that's expensive to debug afterward.
-
-- **Reach for Quinny:** larger systems with several interdependent components,
-  cross-file contracts, and non-trivial ordering; when you want the plan reviewed
-  before code is written; when you want each file verified as it's generated.
-- **Don't bother:** simple scripts, one-file utilities, single features, quick
-  edits, refactors, bug fixes — a plain prompt is faster, cheaper, and just as
-  reliable.
-
-The `.qn` plan is the durable artifact: readable, editable, diffable, reusable.
+`quinny build` — decompose a `.qn` into a task graph and generate one file per
+node — still ships, but it's **experimental**, and you should reach for it with
+eyes open. In held-out benchmarks (`benchmarks/`), a plain one-shot prompt to a
+single model consistently produced *better* code than Quinny's decompose-and-stitch
+pipeline, at every project size — because modern models keep the whole problem
+coherent, while per-node generation loses cross-module agreement. So: let a strong
+agent write the code however it writes best, and use **`quinny verify`** to hold it
+to your contract. That's where Quinny earns its keep.
 
 ## Status
 
-Implemented: parser, task-graph builder + validator, planner, code generator,
-verify/repair loop, `main.py` assembly, CLI.
+Solid: the language + parser + graph validation, and **`quinny verify`** (the
+acceptance-contract engine). Experimental: `gen`, `build`.
 
-Roadmap: a JSON/schema plan format (for dependency-free tooling), parallel node
-execution, and code-gen targets beyond Python.
+Roadmap: verification targets beyond pytest/Python (JS, Go, …); a packaged GitHub
+Action for `quinny verify` (the pattern is in [docs/ci.md](docs/ci.md) today);
+a JSON plan format for dependency-free tooling.
 
 ## Contributing
 
-Issues and PRs welcome. Please keep the language small (the v0.1 surface is 10
-keywords on purpose) and add a test for any parser/graph/validator change.
+Issues and PRs welcome. Please keep the language small (10 keywords on purpose)
+and add a test for any parser/graph/validator change.
 
 ## License
 
