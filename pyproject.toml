@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quinny"
-version = "0.1.0"
+version = "0.2.0"
 description = "An executable specification language: verify any implementation against acceptance criteria in a .qn contract."
 readme = "README.md"
 requires-python = ">=3.10"
