@@ -5,8 +5,8 @@
 Describe *what* your software must do — its components and their concrete
 acceptance criteria — in a small, reviewable `.qn` file. Quinny turns those
 criteria into a runnable test suite and **verifies any implementation against
-them**: code written by a human, by Claude Code, by Cursor — in Python or
-JavaScript. Write the contract once; enforce it forever, in any language, in CI.
+them**: code written by a human, by Claude Code, by Cursor — in Python,
+JavaScript, or Swift. Write the contract once; enforce it forever, in any language, in CI.
 
 ```
 spec.qn ──► quinny verify ──► ✓/✗ per acceptance criterion, on ANY code, ANY language
@@ -150,15 +150,17 @@ direction for a gate.
 0/6 every run). A committed suite is a plain pytest file — no model, no flakiness,
 safe to gate CI on.
 
-**Cross-language** (`verify_crosslang.py`, *experimental*) — the `.qn` contract is
-language-agnostic: `quinny verify --lang js` emits a Node `node:test` suite instead
-of pytest. The same `mini_kv` contract gates a correct **JavaScript** impl at 6/6.
-On the JS variant benchmark, verify kept its **0 false-PASS** safety property — it
-never green-lit broken JS — but a *small* generation model (Haiku) was noisier on
-JS than Python (63% accuracy, and every error a false-*alarm*, never a missed bug),
-because JS test-gen (clock injection, `assert.throws`) is harder. The
-emit→review→`--suite` flow is the fix — review the generated suite once, then it's
-deterministic — and reliability rises with a stronger generation model.
+**Cross-language** (*experimental*) — the `.qn` contract is language-agnostic; only
+the emitted suite differs. `--lang python` → pytest, `--lang js` → Node's `node:test`,
+`--lang swift` → a test compiled alongside the code with `swiftc`. The same contract
+that gates Python gates a correct **JavaScript** impl (6/6) and a **Swift** one (a
+correct cart 4/4, a broken cart 2/4 — catching exactly the two planted defects).
+Verify kept its **0 false-PASS** safety property in every language. Caveat: a *small*
+generation model is noisier on non-Python targets (on the JS variant benchmark,
+Haiku was 63% accurate — every error a false-*alarm*, never a missed bug), because
+their test-gen is harder. The emit→review→`--suite` flow is the fix (review the
+generated suite once, then it's deterministic), and reliability rises with a stronger
+model. Adding a language (Go, Rust, …) is one entry in the `LANGS` registry.
 
 Concrete `test` criteria **gate** the build; high-level `success` summaries are
 shown as **advisory** (they're often unfalsifiable, so they never fail your build).
@@ -193,7 +195,7 @@ pay. (Opus pending — rate-limited during testing; the mechanism is model-indep
 | `quinny check <file>` | Parse + validate the task graph (missing deps, cycles) | no |
 | `quinny graph <file>` | Print the task graph | no |
 | `quinny plan  <file>` | Show execution layers | no |
-| `quinny verify <file> <impl/>` | Compile `test` criteria → run them against code → gate | **yes** (or `--suite`, no) |
+| `quinny verify <file> <impl/>` | Compile `test` criteria → run them against code → gate (`--lang python`/`js`/`swift`) | **yes** (or `--suite`, no) |
 | `quinny gen "<english>"` | Translate English → a `.qn` plan | **yes** |
 | `quinny build <file>` | *(experimental)* generate code from a `.qn` | **yes** |
 

@@ -15,12 +15,14 @@ from pathlib import Path
 
 from quinny._capabilities import make_client, thinking_kwargs
 
-_EXT = {"python": "py", "js": "js"}
+_EXT = {"python": "py", "js": "js", "swift": "swift"}
 _STUB_RULE = {
     "python": "a Python module; function/method bodies are `raise NotImplementedError`; "
               "start the block with `# <module>.py`",
     "js": "a JavaScript module using `module.exports`; bodies `throw new Error(\"not implemented\")`; "
           "start the block with `// <module>.js`",
+    "swift": "a Swift file with struct/class declarations; method bodies are "
+             "`fatalError(\"not implemented\")`; start the block with `// <module>.swift`",
 }
 
 

@@ -87,6 +87,45 @@ def _surface_js(impl_dir: Path) -> str:
     return "\n".join(parts) or "(no modules found)"
 
 
+def _surface_swift(impl_dir: Path) -> str:
+    parts = []
+    for sw in sorted(impl_dir.glob("*.swift")):
+        if sw.name == "main.swift":
+            continue
+        text = sw.read_text()
+        types = re.findall(r"\b(?:struct|class|enum|protocol)\s+([A-Za-z_]\w*)", text)
+        # full method signatures so the model calls them the right way
+        api = [m.strip() for m in re.findall(
+            r"((?:mutating\s+)?(?:static\s+)?func\s+\w+\s*\([^)]*\)[^\n{]*)", text)]
+        api += [m.strip() for m in re.findall(r"(init\s*\([^)]*\)[^\n{]*)", text)]
+        if types or api:
+            head = f"- {sw.name}: types [{', '.join(dict.fromkeys(types))}]"
+            parts.append(head + (f"  |  API: {'; '.join(api)}" if api else ""))
+    return "\n".join(parts) or "(no Swift declarations found)"
+
+
+def _run_swift(impl_dir: Path, suite_src: str) -> str:
+    """Swift is compiled: copy the implementation's declaration files, drop the
+    generated test as main.swift (top-level code must live there), compile them
+    together (one module — the test uses the impl's types directly, no import),
+    run, and return the TAP output. A compile error means every criterion fails."""
+    import shutil
+    build = Path(tempfile.mkdtemp(prefix="qswift_"))
+    for sw in impl_dir.glob("*.swift"):
+        if sw.name == "main.swift":
+            continue
+        shutil.copy(sw, build / sw.name)
+    (build / "main.swift").write_text(suite_src)
+    srcs = [str(p) for p in build.glob("*.swift")]
+    exe = build / "runner"
+    comp = subprocess.run(["swiftc", *srcs, "-o", str(exe)],
+                          capture_output=True, text=True, timeout=180)
+    if comp.returncode != 0:
+        return comp.stderr        # no TAP lines → all criteria fail
+    run = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
+    return run.stdout + run.stderr
+
+
 def _parse_pytest(out: str) -> dict[int, str]:
     status = {}
     for m in re.finditer(r"test_c(\d+)\b.*?(PASSED|FAILED|ERROR)", out):
@@ -129,6 +168,23 @@ c01, c02, ... matching the numbers.
 - Only Node built-ins. Do not test anything outside the criteria."""
 
 
+_SYSTEM_SWIFT = """You write a Swift acceptance suite that checks whether an \
+implementation satisfies a specification. Output ONLY Swift top-level code (it \
+becomes main.swift) — no prose, no markdown fences.
+
+Rules:
+- The test is COMPILED TOGETHER with the implementation as one module, so use its \
+types directly — NO import.
+- For each numbered criterion, run a check and print exactly `ok cNN` on pass or \
+`not ok cNN - <reason>` on fail (NN = the criterion number). Do NOT stop on the \
+first failure — check every criterion.
+- Use plain `if`/comparisons or do/catch for error criteria (assert would abort \
+the whole run). Only the Swift standard library.
+- Call the API EXACTLY as its signatures show: instance methods are `x.method(...)` \
+(not free functions); value types (structs) are created with `var x = Type()` and \
+mutating methods need a `var`; `throws` methods need `try` inside do/catch."""
+
+
 LANGS = {
     "python": {
         "system": _SYSTEM_PY, "surface": _surface_py, "parse": _parse_pytest,
@@ -142,6 +198,10 @@ LANGS = {
         "suffix": ".quinny.contract.test.js",
         "cmd": lambda p: ["node", "--test", "--test-reporter=tap", str(p)],
         "env": lambda impl: {},
+    },
+    "swift": {
+        "system": _SYSTEM_SWIFT, "surface": _surface_swift, "parse": _parse_tap,
+        "compile_run": _run_swift,   # compiled — handled specially in run_suite
     },
 }
 
@@ -174,6 +234,11 @@ def run_suite(impl_dir: Path, suite_src: str, criteria: list[Criterion],
               lang: str = "python") -> list[CriterionResult]:
     cfg = LANGS[lang]
     status = {c.index: "MISSING" for c in criteria}
+    # Compiled languages (Swift): compile the suite with the implementation, run.
+    if "compile_run" in cfg:
+        out = cfg["compile_run"](impl_dir, suite_src)
+        status.update(cfg["parse"](out))
+        return [CriterionResult(c, status[c.index]) for c in criteria]
     with tempfile.NamedTemporaryFile("w", suffix=cfg["suffix"],
                                      dir=str(impl_dir), delete=False) as fh:
         fh.write(suite_src)
