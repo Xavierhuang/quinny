@@ -105,6 +105,11 @@ Across both, verify has **never once passed a broken implementation.** The only
 disagreements were verify being *stricter* than the reference — the safe
 direction for a gate.
 
+**Determinism** (`verify_determinism.py`) — emit a suite once, then re-run it via
+`--suite`: **60 re-runs, zero verdict drift** (correct impl 6/6 every run, broken
+0/6 every run). A committed suite is a plain pytest file — no model, no flakiness,
+safe to gate CI on.
+
 Concrete `test` criteria **gate** the build; high-level `success` summaries are
 shown as **advisory** (they're often unfalsifiable, so they never fail your build).
 
