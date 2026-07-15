@@ -7,6 +7,9 @@ hiddenimports = []
 datas += collect_data_files('lark')
 hiddenimports += collect_submodules('lark')
 hiddenimports += collect_submodules('anthropic')
+# quinny.cli imports contract/scaffold/generator/etc. lazily inside functions,
+# which PyInstaller's static analysis misses — force-collect the whole package.
+hiddenimports += collect_submodules('quinny')
 
 
 a = Analysis(
