@@ -59,6 +59,31 @@ class _StubMessages:
             ),
         )
 
+    def stream(self, **kwargs) -> "_StubStream":
+        return _StubStream(self.create(**kwargs))
+
+
+class _StubStream:
+    """Mimics client.messages.stream(...) as a context manager, matching the
+    streaming path run_one_raw uses (added to dodge the proxy's CF 524)."""
+
+    def __init__(self, response: _StubResponse) -> None:
+        self._response = response
+
+    def __enter__(self) -> "_StubStream":
+        return self
+
+    def __exit__(self, *exc) -> bool:
+        return False
+
+    @property
+    def text_stream(self):
+        for block in self._response.content:
+            yield block.text
+
+    def get_final_message(self) -> _StubResponse:
+        return self._response
+
 
 class _StubClient:
     def __init__(self) -> None:
