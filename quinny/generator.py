@@ -94,8 +94,19 @@ def _camel_case(name: str) -> str:
     return name[:1].lower() + name[1:] if name else name
 
 
+import sys as _sys
+_STDLIB_NAMES = set(getattr(_sys, "stdlib_module_names", set())) | {"antigravity", "this"}
+
+
 def _module_name(name: str, target: str) -> str:
-    return _snake_case(name) if _TARGET_META[target]["module_case"] == "snake_case" else _camel_case(name)
+    base = (_snake_case(name) if _TARGET_META[target]["module_case"] == "snake_case"
+            else _camel_case(name))
+    # A node named `Ast`/`Builtins`/`Tokens` would map to ast.py/builtins.py and
+    # SHADOW the Python stdlib module of the same name, breaking imports project-
+    # wide. Mangle any collision so decomposition can't sabotage itself.
+    if target == "python" and base in _STDLIB_NAMES:
+        base = f"{base}_mod"
+    return base
 
 
 def _fields_by_kind(fields: tuple[Field, ...], kind: str) -> list[str]:
