@@ -1,28 +1,27 @@
 # Using Quinny with Claude Code
 
 Quinny is a normal CLI on your PATH, so [Claude Code](https://claude.com/claude-code)
-can use it the moment it's installed — no plugin required. There are three levels
-of integration, cheapest first.
+can use it the moment it's installed — no plugin required. Its job is to
+**verify** the code Claude writes against a contract, not to write code (Claude is
+better at that alone). Three levels, cheapest first.
 
 ## 0. It already works (nothing to set up)
 
-Because `quinny` is just a command, Claude Code can run it via Bash. In any
-project, ask:
+Because `quinny` is just a command, Claude Code runs it via Bash. The natural loop:
 
-> "Use `quinny` to plan and build a URL shortener with base62 ids."
+> "Build a shopping cart module. Use `quinny scaffold` to draft a contract for the
+> logic, implement it, then `quinny verify` and fix until it passes."
 
-Claude will run `quinny gen`, `quinny check`, and `quinny build` on its own. This
-is the zero-config path — the same way it already uses `git`, `jq`, or `pytest`.
-
-Quinny's `gen`/`build` need LLM credentials in the environment
-(`ANTHROPIC_API_KEY`, or a proxy via `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`).
-Everything before them (`parse`/`check`/`graph`/`plan`) needs no credentials.
+Claude runs `quinny scaffold`, writes the code, runs `quinny verify`, and iterates
+to green. `verify`/`scaffold` need LLM credentials in the environment
+(`ANTHROPIC_API_KEY`, or `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`).
+`check`/`graph`/`plan` and `verify --suite` need none.
 
 ## 1. A `/quinny` slash command
 
 This repo ships a ready-made command at
-[`.claude/commands/quinny.md`](../.claude/commands/quinny.md). Install it once,
-globally:
+[`.claude/commands/quinny.md`](../.claude/commands/quinny.md) that runs the whole
+scaffold → implement → verify loop. Install it once, globally:
 
 ```bash
 mkdir -p ~/.claude/commands
@@ -33,42 +32,36 @@ curl -fsSL https://raw.githubusercontent.com/Xavierhuang/quinny/main/.claude/com
 Then, in any Claude Code session:
 
 ```
-/quinny a task queue with a Redis-backed store, a worker pool, and retry/backoff
+/quinny a checkout with per-item quantity, tax, and a discount code that rejects invalid percentages
 ```
 
-It runs the full gen → check (fix loop) → build flow, and — importantly — it will
-**decline** and tell you to just write the code directly when the task is too
-simple to be worth Quinny's cost.
+It scopes the *logic* (not the UI), contracts it, implements, verifies to green,
+and — importantly — declines when there's no correctness-critical logic to gate.
 
 ## 2. Teach Claude *when* to reach for Quinny (paste-in CLAUDE.md)
 
-Add this block to your project's `CLAUDE.md` (or `~/.claude/CLAUDE.md` for all
-projects) so Claude reaches for Quinny at the right time and writes valid `.qn`:
+Add this to your project's `CLAUDE.md` (or `~/.claude/CLAUDE.md`) so Claude uses
+Quinny at the right time:
 
 ```markdown
-## Quinny (intent-language planner)
+## Quinny (verify correctness-critical logic)
 
-`quinny` is installed. Use it ONLY for genuinely complex, multi-component builds
-— several interdependent pieces, cross-file contracts, non-trivial ordering.
-For simple scripts, single features, edits, or bug fixes, write the code directly;
-Quinny would cost more tokens for no benefit.
+`quinny` is installed. It VERIFIES code against acceptance criteria — it does not
+write code. Use it ONLY where correctness matters: pricing, cart/checkout math,
+business rules, state machines, validation, auth, parsing, calculations. Do NOT
+use it for UI, styling, static pages, simple scripts, or one-off edits.
 
 When it fits:
-1. `quinny gen "<description>" -o plan.qn` — draft a plan; review/edit it.
-2. `quinny check plan.qn` — validate (missing deps, cycles) BEFORE generating code.
-   Fix plan.qn and re-run until it passes.
-3. `quinny build plan.qn --full-verify --assemble -o out/` — generate, verify, assemble.
+1. `quinny scaffold "<what to build>" -o <dir>` — draft a `.qn` contract for the
+   logic + a module stub. (`--lang js` / `--lang swift` for those targets.)
+2. Implement the module (write the real code).
+3. `quinny verify <dir>/<name>.qn <dir>` — fix your code until all gating criteria pass.
+4. `quinny verify … --emit <name>_contract_test.py` and commit it for CI.
 
-The `.qn` file is the durable, diffable record of intent — keep it in the repo.
-To hand-write a plan, see the syntax guide the project links from docs/AI_PROMPT.md.
+If verify can't reach a model, note it and keep building — never let it block.
 ```
 
-The full syntax primer an LLM needs to author `.qn` by hand lives in
-[`docs/AI_PROMPT.md`](AI_PROMPT.md); the language reference is
-[`docs/LANGUAGE_SPEC.md`](LANGUAGE_SPEC.md).
+## 3. In CI
 
-## 3. (Optional / future) An MCP server
-
-A `quinny mcp` stdio server exposing `check`/`plan`/`build` as structured tools —
-`claude mcp add quinny -- quinny mcp` — is not implemented yet. Levels 0–2 cover
-the common cases without it. Track it in the issues if you want it.
+The emitted suite is a plain test file — commit it and gate every push with no
+model in the loop. See [docs/ci.md](ci.md) for the ready-to-copy GitHub Action.
