@@ -298,6 +298,40 @@ def cmd_gen(request: str, output: Path | None, model: str, max_retries: int) -> 
     return 0
 
 
+def cmd_verify(file: Path, impl: Path, model: str) -> int:
+    from quinny.contract import verify
+    if not impl.is_dir():
+        console.print(f"[red]error:[/red] {impl} is not a directory")
+        return 2
+    console.print(f"Compiling acceptance criteria from [bold]{file.name}[/bold] "
+                  f"and verifying [bold]{impl}[/bold] (via {model})…\n")
+    results = verify(file, impl, model)
+    if not results:
+        console.print("[yellow]No test/success criteria in this plan.[/yellow]")
+        return 0
+    from rich.table import Table
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("#", justify="right")
+    table.add_column("node")
+    table.add_column("criterion")
+    table.add_column("result")
+    mark = {"PASS": "[green]✓ PASS[/green]", "FAIL": "[red]✗ FAIL[/red]",
+            "ERROR": "[red]✗ ERROR[/red]", "MISSING": "[yellow]— n/a[/yellow]"}
+    passed = 0
+    for r in results:
+        if r.status == "PASS":
+            passed += 1
+        text = r.criterion.text
+        table.add_row(str(r.criterion.index), r.criterion.node,
+                      text[:70] + ("…" if len(text) > 70 else ""),
+                      mark.get(r.status, r.status))
+    console.print(table)
+    total = len(results)
+    color = "green" if passed == total else ("red" if passed == 0 else "yellow")
+    console.print(f"\n[{color}]{passed}/{total} acceptance criteria satisfied[/{color}]")
+    return 0 if passed == total else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="quinny",
@@ -313,6 +347,14 @@ def main(argv: list[str] | None = None) -> int:
     ]:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("file", type=Path)
+
+    ver = sub.add_parser("verify",
+                         help="Compile a plan's test/success criteria into a "
+                              "pytest suite and run it against an implementation.")
+    ver.add_argument("file", type=Path, help="The .qn plan (the contract).")
+    ver.add_argument("impl", type=Path, help="Directory of code to verify.")
+    ver.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"),
+                     help="Model used to compile criteria into tests.")
 
     gen = sub.add_parser("gen", help="Translate English into Quinny via Claude.")
     gen.add_argument("request", help="Natural-language description of what to build.")
@@ -360,6 +402,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.cmd == "verify":
+            return cmd_verify(args.file, args.impl, args.model)
         if args.cmd == "gen":
             return cmd_gen(args.request, args.output, args.model, args.max_retries)
         if args.cmd == "build":
