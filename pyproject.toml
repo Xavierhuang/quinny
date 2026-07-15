@@ -42,6 +42,12 @@ Issues = "https://github.com/Xavierhuang/quinny/issues"
 [project.scripts]
 quinny = "quinny.cli:main"
 
+[tool.pytest.ini_options]
+# Only the package's own unit tests. The held-out suites under benchmarks/ are
+# run explicitly against generated code (by scripts/bench.py and quinny verify),
+# not collected here — they import modules that don't exist at repo root.
+testpaths = ["tests"]
+
 [tool.setuptools.packages.find]
 include = ["quinny*"]
 
