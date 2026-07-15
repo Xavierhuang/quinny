@@ -1,0 +1,17 @@
+A pure-Python in-memory key-value store with TTL expiry, LRU eviction, and single-level transactions. Standard library only. The public API MUST live in a file named `mini_kv.py` and expose a class `MiniKV` with exactly this contract:
+
+- `MiniKV(capacity: int, time_fn=time.monotonic)` — `capacity` is the maximum number of live (non-expired) entries; `time_fn` is a zero-arg callable returning the current time in float seconds (injected so time can be controlled in tests).
+- `set(key, value, ttl=None)` — insert or overwrite. `ttl`, if given, is a lifetime in seconds (float); the entry expires once `time_fn()` has advanced strictly beyond the deadline (deadline = time at set + ttl). `ttl=None` means never expires. A `set` counts as a use for LRU. If inserting a new key would exceed `capacity`, evict the least-recently-used live entry first.
+- `get(key)` — return the stored value. Raise `KeyError` if the key is absent or has expired (expired entries are removed lazily on access). A successful `get` counts as a use for LRU (refreshes recency).
+- `delete(key) -> bool` — remove the key; return `True` if it existed and was live, else `False`.
+- `exists(key) -> bool` — `True` if the key is present and not expired, else `False`. Does NOT count as an LRU use.
+- `__len__` — number of live (non-expired) entries.
+
+Recency for LRU is updated by `set` and by successful `get` (most-recently-used = most recently set or gotten). When over capacity, evict the least-recently-used live entry.
+
+Transactions (single level, no nesting):
+- `begin()` — start a transaction, snapshotting current state. Raise `RuntimeError` if a transaction is already active.
+- `commit()` — keep all changes made since `begin()`. Raise `RuntimeError` if no transaction is active.
+- `rollback()` — revert the store to the snapshot taken at `begin()`, undoing every `set`/`delete` since. Raise `RuntimeError` if no transaction is active.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that exercises the whole API and exits 0. You may split the implementation across additional modules, but `mini_kv.py` must expose `MiniKV` as specified.

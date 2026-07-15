@@ -1,0 +1,82 @@
+project MiniKV
+
+component PythonStdlib
+    goal
+        The Python standard library runtime available to the project.
+
+component MiniKvModule
+    goal
+        Public module file mini_kv.py exposing the MiniKV class.
+
+component MainDemo
+    goal
+        Executable demo script main.py exercising the public API.
+
+task ImplementMiniKV
+    goal
+        Implement the pure-Python in-memory key-value store with TTL expiry, LRU eviction, and single-level transactions.
+    output
+        MiniKvModule
+    constraint
+        Public API must live in a file named mini_kv.py.
+    constraint
+        Only the Python standard library may be used.
+    constraint
+        TTL expiry is strict: an entry expires once time_fn() advances beyond set time plus ttl.
+    constraint
+        Expired entries are removed lazily on access.
+    constraint
+        set and successful get both refresh LRU recency.
+    constraint
+        Inserting beyond capacity evicts the least-recently-used live entry.
+    constraint
+        begin, commit, and rollback enforce single-level transaction lifecycle.
+    depends
+        PythonStdlib
+
+task ImplementDemoMain
+    goal
+        Provide a runnable demonstration that exercises the complete MiniKV API.
+    output
+        MainDemo
+    depends
+        ImplementMiniKV
+        PythonStdlib
+
+task ValidateContractTests
+    goal
+        Verify that MiniKV satisfies the documented public API contract.
+    depends
+        ImplementMiniKV
+        PythonStdlib
+    test
+        TTL expiry removes entries only after the deadline is strictly exceeded.
+    test
+        Capacity overflow evicts the least-recently-used live entry.
+    test
+        set refreshes an entry's LRU recency.
+    test
+        successful get refreshes an entry's LRU recency.
+    test
+        exists returns False for expired keys and does not affect recency.
+    test
+        delete returns True only for live keys.
+    test
+        begin raises RuntimeError when a transaction is already active.
+    test
+        commit and rollback raise RuntimeError when no transaction is active.
+    test
+        rollback reverts every set and delete to the snapshot from begin.
+    success
+        All contract tests pass without modifying mini_kv.py.
+
+task VerifyDemoRuns
+    goal
+        Ensure the demo script executes successfully and exits with status code 0.
+    depends
+        ImplementDemoMain
+        PythonStdlib
+    test
+        main.py runs to completion under python.
+    success
+        The demo process exits with status code 0.

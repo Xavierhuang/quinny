@@ -1,0 +1,35 @@
+{
+  "started_at": "20260715T183935Z",
+  "runs": [
+    {
+      "prompt": "minilang",
+      "config": "quinny-haiku-good",
+      "run_index": 0,
+      "tokens_input": 11056,
+      "tokens_output": 9132,
+      "tokens_total": 20188,
+      "files_generated": 9,
+      "verify_passed": 9,
+      "full_verified": 5,
+      "main_runs": true,
+      "test_passed": 0,
+      "test_total": 18,
+      "error": ""
+    },
+    {
+      "prompt": "minilang",
+      "config": "quinny-haiku-good",
+      "run_index": 1,
+      "tokens_input": 12077,
+      "tokens_output": 9419,
+      "tokens_total": 21496,
+      "files_generated": 9,
+      "verify_passed": 9,
+      "full_verified": 6,
+      "main_runs": true,
+      "test_passed": 0,
+      "test_total": 18,
+      "error": ""
+    }
+  ]
+}

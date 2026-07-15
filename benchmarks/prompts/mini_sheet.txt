@@ -1,0 +1,20 @@
+A pure-Python spreadsheet formula engine (no UI, no files). Standard library only. The public API MUST live in a file named `mini_sheet.py` and expose a class `Sheet` and an exception class `CycleError`, with exactly this contract:
+
+- `Sheet()` — construct an empty sheet.
+- `set_cell(ref, content)` — `ref` is a cell reference like `"A1"` (one uppercase letter column A–Z, then a positive row number). `content` is always a `str`:
+  - If it starts with `"="`, it is a formula.
+  - Else if it parses as a number, the cell holds that number (int if integral, e.g. `"5"` -> `5`).
+  - Otherwise the cell holds the raw string.
+- `get_value(ref)` — return the cell's evaluated value. An empty/never-set cell evaluates to `0`. A numeric cell returns its number; a string cell returns its string; a formula returns its computed result. Values always reflect the current inputs (updating a cell updates everything that depends on it).
+
+Formula language (right of the `=`):
+- Numeric literals, cell references (`A1`), and the binary operators `+`, `-`, `*`, `/` with standard precedence (`*` and `/` bind tighter than `+`/`-`) and parentheses.
+- A reference to an empty cell evaluates to `0`.
+- Range function `SUM(A1:B2)` — sums every cell in the rectangular block from the top-left ref to the bottom-right ref inclusive.
+- Division by zero raises `ValueError`.
+
+Dependency + cycle rules:
+- Cells form a dependency graph; changing a cell must be reflected by later `get_value` calls on cells that (transitively) depend on it.
+- If a `set_cell` call would introduce a dependency cycle (a cell depending on itself directly or transitively), raise `CycleError` and DO NOT apply the change (the sheet is left exactly as it was before the call).
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that exercises the whole API and exits 0. You may split the implementation across additional modules, but `mini_sheet.py` must expose `Sheet` and `CycleError` as specified.

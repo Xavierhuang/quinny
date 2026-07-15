@@ -1,0 +1,65 @@
+{
+  "started_at": "20260715T005725Z",
+  "runs": [
+    {
+      "prompt": "mini_kv",
+      "config": "raw-opus-cli",
+      "run_index": 0,
+      "tokens_input": 20552,
+      "tokens_output": 16422,
+      "tokens_total": 36974,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 2,
+      "main_runs": true,
+      "test_passed": 13,
+      "test_total": 13,
+      "error": ""
+    },
+    {
+      "prompt": "mini_kv",
+      "config": "raw-opus-cli",
+      "run_index": 1,
+      "tokens_input": 8715,
+      "tokens_output": 14176,
+      "tokens_total": 22891,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 2,
+      "main_runs": true,
+      "test_passed": 13,
+      "test_total": 13,
+      "error": ""
+    },
+    {
+      "prompt": "mini_sheet",
+      "config": "raw-opus-cli",
+      "run_index": 0,
+      "tokens_input": 8657,
+      "tokens_output": 11838,
+      "tokens_total": 20495,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 2,
+      "main_runs": true,
+      "test_passed": 14,
+      "test_total": 14,
+      "error": ""
+    },
+    {
+      "prompt": "mini_sheet",
+      "config": "raw-opus-cli",
+      "run_index": 1,
+      "tokens_input": 20573,
+      "tokens_output": 41938,
+      "tokens_total": 62511,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 0,
+      "main_runs": false,
+      "test_passed": 14,
+      "test_total": 14,
+      "error": "TimeoutExpired: Command '['claude', '-p', 'You implement a runnable Python project from a one-sentence requirement. Output ONLY code \u2014 n"
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+project MiniLang
+
+component Tokens
+    goal
+        Token definitions for MiniLang: a Token type carrying a kind and a value, plus the set of token kinds (number, string, name, keyword, operator, punctuation, end-of-input).
+    constraint
+        Standard library only. Keywords are let, fn, if, then, else, and, or, not, true, false.
+
+component Tokenizer
+    goal
+        A tokenizer that turns a MiniLang source string into a list of Tokens.
+    uses
+        Tokens
+    depends
+        Tokens
+    constraint
+        Recognize integer and float literals, double-quoted string literals, identifiers, the keywords, and the operators == != <= >= => = + - * / % ( ) < > , ; . Skip whitespace. Identifiers that are keywords become keyword tokens.
+
+component Ast
+    goal
+        AST node definitions for MiniLang expressions and statements: literal, variable, unary op, binary op, comparison, and/or/not, let-binding, if-expression, function literal (params and body), and call.
+    constraint
+        Standard library only. Plain data classes or namedtuples are fine.
+
+component Parser
+    goal
+        A recursive-descent parser turning a token list into a MiniLang AST. Parses a program as one or more statements separated by semicolons, each statement a let-binding or an expression.
+    uses
+        Tokens
+        Ast
+    depends
+        Tokens
+        Ast
+    constraint
+        Honor precedence: or, then and, then not, then comparisons (== != < <= > >=), then additive (+ -), then multiplicative (* / %), then unary minus, then call application f(args), then atoms. Atoms include literals, names, parenthesized expressions, if COND then A else B, and fn(params) => expr.
+
+component Environment
+    goal
+        A lexical environment mapping variable names to values, with a link to an enclosing (parent) environment so closures can capture outer scopes. Looking up a name searches outward; an unbound name raises NameError.
+    constraint
+        Standard library only.
+
+component Builtins
+    goal
+        The MiniLang built-in functions available in the global scope: len, abs, and str, exposed as a mapping from name to a callable.
+    constraint
+        Standard library only.
+
+component Evaluator
+    goal
+        An evaluator that walks a MiniLang AST in a given Environment and returns Python values. Function literals become closures capturing their defining environment; calling a closure evaluates its body in a child environment binding parameters to arguments. Built-in callables are called directly.
+    uses
+        Ast
+        Environment
+    depends
+        Ast
+        Environment
+    constraint
+        Arithmetic: + - * / %, where / is float division and + concatenates two strings. Comparisons return booleans. and/or/not are boolean. if returns its then-branch when the condition is truthy else its else-branch. Division by zero raises ZeroDivisionError. An unbound variable raises NameError.
+    test
+        2 + 3 * 4 evaluates to 14 and (2 + 3) * 4 to 20.
+    test
+        let add = fn(a, b) => a + b; add(3, 4) evaluates to 7.
+    test
+        let x = 10; let g = fn(n) => n + x; g(5) evaluates to 15 (closure captures x).
+
+component MiniLang
+    goal
+        The public module minilang.py exposing evaluate(source), which tokenizes, parses, and evaluates a MiniLang program in a fresh global environment seeded with the built-ins, returning the value of the last statement.
+    uses
+        Tokenizer
+        Parser
+        Evaluator
+        Environment
+        Builtins
+    depends
+        Tokenizer
+        Parser
+        Evaluator
+        Environment
+        Builtins
+    constraint
+        The function MUST be named evaluate and live in minilang.py. Seed the global environment with the built-ins (len, abs, str) before evaluating.
+    test
+        evaluate('let x = 5; x * 2') returns 10.
+    test
+        evaluate('if 2 > 1 then 10 else 20') returns 10.
+    test
+        evaluate('nope') raises NameError; evaluate('1 / 0') raises ZeroDivisionError.
+    success
+        evaluate runs whole MiniLang programs correctly across arithmetic, strings, booleans, let, if, functions, closures, and builtins.
+
+component Demo
+    goal
+        A runnable main.py that calls evaluate on several MiniLang programs, prints the results, and exits 0.
+    uses
+        MiniLang
+    depends
+        MiniLang

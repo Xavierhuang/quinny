@@ -1,0 +1,39 @@
+project MiniKVStore
+
+component MiniKV
+    goal
+        A pure-Python in-memory key-value store class named MiniKV, implemented as one cohesive class in a single module, with LRU eviction, TTL expiry, and single-level transactions.
+    constraint
+        Constructor MiniKV(capacity, time_fn=time.monotonic): capacity is the maximum number of live non-expired entries; time_fn is a zero-argument callable returning float seconds, used for ALL ttl timing so tests can inject a fake clock.
+    constraint
+        set(key, value, ttl=None) inserts or overwrites. If ttl is given the entry expires once time_fn() is strictly greater than the time-at-set plus ttl; ttl=None never expires. set counts as an LRU use. Inserting a NEW key beyond capacity first evicts the least-recently-used live entry.
+    constraint
+        get(key) returns the value, or raises KeyError if the key is absent or expired. Expired entries are removed lazily on access. A successful get refreshes LRU recency so it becomes most-recently-used.
+    constraint
+        delete(key) returns True if the key existed and was live else False. exists(key) returns True only if present and not expired and must NOT change LRU recency. __len__ returns the count of live non-expired entries.
+    constraint
+        begin() starts a transaction and snapshots state, raising RuntimeError if one is already active. commit() keeps changes, raising RuntimeError if none is active. rollback() restores the snapshot taken at begin, undoing every set and delete since, raising RuntimeError if none is active. No nested transactions.
+    constraint
+        Python standard library only. The entire MiniKV class lives in one file.
+    test
+        MiniKV(capacity=2); set a, b, then c; get(a) raises KeyError because a was evicted as least-recently-used.
+    test
+        capacity 2, set a and b, get(a), then set c evicts b because a was refreshed by the get.
+    test
+        with an injected clock, set(k, v, ttl=10): get(k) succeeds at t+5 and raises KeyError at t+11, and exists(k) is False after expiry.
+    test
+        begin; set x; commit keeps x. set x=1; begin; set x=2; rollback leaves get(x)==1.
+    test
+        set y=1; begin; delete y; rollback leaves get(y)==1.
+    test
+        commit with no active transaction raises RuntimeError; calling begin twice raises RuntimeError.
+    success
+        MiniKV supports capacity-bounded LRU eviction, per-entry TTL expiry, and begin/commit/rollback transactions exactly as specified.
+
+component Demo
+    goal
+        A runnable main.py that constructs a MiniKV and exercises set, get, delete, exists, TTL expiry, LRU eviction, and both a begin/commit and a begin/rollback cycle, printing results and exiting with status 0.
+    uses
+        MiniKV
+    depends
+        MiniKV

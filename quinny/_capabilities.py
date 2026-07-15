@@ -35,8 +35,13 @@ import os
 def make_client():
     """Construct an Anthropic client. When routed through the LingModel proxy
     (ANTHROPIC_AUTH_TOKEN set), override the User-Agent — the hosted proxy's WAF
-    blocks the default "Anthropic/Python" UA, so use a neutral one."""
+    blocks the default "Anthropic/Python" UA, so use a neutral one. When
+    QUINNY_OAUTH is set, add the OAuth beta header so a Claude subscription
+    (auth_token) is accepted by api.anthropic.com."""
     import anthropic
     if os.environ.get("ANTHROPIC_AUTH_TOKEN"):
-        return anthropic.Anthropic(default_headers={"User-Agent": "quinny/0.1"})
+        headers = {"User-Agent": "quinny/0.1"}
+        if os.environ.get("QUINNY_OAUTH"):
+            headers["anthropic-beta"] = "oauth-2025-04-20"
+        return anthropic.Anthropic(default_headers=headers)
     return anthropic.Anthropic()

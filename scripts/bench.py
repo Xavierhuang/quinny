@@ -41,6 +41,7 @@ PROMPTS_DIR = ROOT / "benchmarks" / "prompts"
 PLANS_DIR   = ROOT / "benchmarks" / "plans"
 RESULTS_DIR = ROOT / "benchmarks" / "results"
 WORK_DIR    = ROOT / "benchmarks" / ".work"
+HOLDOUT_DIR = ROOT / "benchmarks" / "tests_holdout"
 
 
 # Per-stage model routing per config. `planner` is only used with --warm-plans
@@ -69,10 +70,28 @@ CONFIGS: dict[str, dict[str, str]] = {
     "raw-kimi":    {"raw": "kimi-k2.7"},
     "quinny-kimi": {"planner": "kimi-k2.7", "types": "kimi-k2.7",
                     "node": "kimi-k2.7", "repair": "kimi-k2.7", "assemble": "kimi-k2.7"},
+    # Fair-shot arm: a hand-authored, detailed multi-component plan (<name>.good.qn)
+    # executed by Kimi. Isolates EXECUTION quality from Kimi's weak planning.
+    "quinny-kimi-good": {"planner": "kimi-k2.7", "types": "kimi-k2.7",
+                    "node": "kimi-k2.7", "repair": "kimi-k2.7", "assemble": "kimi-k2.7",
+                    "plan_suffix": "good"},
+    # Haiku arms (via OAuth SDK — a genuinely weaker model, ideal for the scale
+    # test where a raw one-shot is likely to fail).
+    "quinny-haiku": {"planner": "claude-haiku-4-5", "types": "claude-haiku-4-5",
+                    "node": "claude-haiku-4-5", "repair": "claude-haiku-4-5",
+                    "assemble": "claude-haiku-4-5"},
+    "quinny-haiku-good": {"planner": "claude-haiku-4-5", "types": "claude-haiku-4-5",
+                    "node": "claude-haiku-4-5", "repair": "claude-haiku-4-5",
+                    "assemble": "claude-haiku-4-5", "plan_suffix": "good"},
+    # Frontier baseline via the authenticated `claude` CLI (real Opus, subscription
+    # auth). `via:cli` routes to run_one_raw_cli instead of the Python SDK.
+    "raw-opus-cli": {"raw": "opus", "via": "cli"},
 }
 
 
-RAW_MAX_REPAIR = 2   # feed-back-errors loop cap for raw-prompt baselines
+RAW_MAX_REPAIR = 2      # feed-back-errors loop cap for raw-prompt baselines
+RAW_MAX_TOKENS = 16000  # output cap for SDK raw baselines (complex projects need room;
+                        # 8k truncated Kimi's mini_kv on some runs)
 
 
 # ------------------------------- results ----------------------------------
@@ -89,6 +108,8 @@ class RunResult:
     verify_passed:   int      # nodes that passed fast verify
     full_verified:   int      # nodes whose __main__ ran cleanly
     main_runs: bool           # `python main.py` exit code == 0
+    test_passed: int = 0      # held-out acceptance tests that passed
+    test_total:  int = 0      # held-out acceptance tests total (0 = no suite)
     error: str = ""           # populated if the build itself blew up
 
     @property
@@ -108,16 +129,19 @@ def _prompt_name(path: Path) -> str:
     return path.stem
 
 
-def _plan_path(prompt: Path, plan_format: str = "quinny") -> Path:
+def _plan_path(prompt: Path, plan_format: str = "quinny",
+               suffix: str | None = None) -> Path:
     ext = "qn.json" if plan_format == "json" else "qn"
-    return PLANS_DIR / f"{_prompt_name(prompt)}.{ext}"
+    stem = _prompt_name(prompt) + (f".{suffix}" if suffix else "")
+    return PLANS_DIR / f"{stem}.{ext}"
 
 
-def _resolve_plan_path(prompt: Path) -> Path | None:
-    """Prefer the JSON plan when both exist; fall back to the DSL. Used by
-    `run_one` so a config can pick whichever plan is on disk."""
+def _resolve_plan_path(prompt: Path, suffix: str | None = None) -> Path | None:
+    """Prefer the JSON plan when both exist; fall back to the DSL. `suffix`
+    selects a variant plan file (e.g. `<name>.good.qn`) so different configs
+    can execute different plans of the same prompt."""
     for fmt in ("json", "quinny"):
-        p = _plan_path(prompt, fmt)
+        p = _plan_path(prompt, fmt, suffix)
         if p.exists():
             return p
     return None
@@ -160,6 +184,8 @@ def _fresh_dir(path: Path) -> None:
 def run_one(prompt: Path, config_name: str, run_index: int) -> RunResult:
     """Generate + verify + assemble one config-run. Returns metrics."""
     cfg = CONFIGS[config_name]
+    if cfg.get("via") == "cli":
+        return run_one_raw_cli(prompt, config_name, run_index)
     if "raw" in cfg:
         return run_one_raw(prompt, config_name, run_index)
 
@@ -169,7 +195,7 @@ def run_one(prompt: Path, config_name: str, run_index: int) -> RunResult:
     from quinny.verifier import verify
     from quinny.usage import UsageTracker
 
-    plan_file = _resolve_plan_path(prompt)
+    plan_file = _resolve_plan_path(prompt, cfg.get("plan_suffix"))
     if plan_file is None:
         return RunResult(
             prompt=_prompt_name(prompt), config=config_name, run_index=run_index,
@@ -204,6 +230,7 @@ def run_one(prompt: Path, config_name: str, run_index: int) -> RunResult:
         assembly.write(out_dir)
 
         main_runs = _run_main(out_dir)
+        test_passed, test_total = grade_holdout(out_dir, _prompt_name(prompt))
         return RunResult(
             prompt=_prompt_name(prompt), config=config_name, run_index=run_index,
             tokens_input =sum(c.input_tokens  for c in tracker.calls),
@@ -213,6 +240,7 @@ def run_one(prompt: Path, config_name: str, run_index: int) -> RunResult:
             verify_passed=verify_passed,
             full_verified=full_verified,
             main_runs=main_runs,
+            test_passed=test_passed, test_total=test_total,
         )
     except Exception as e:                               # bounded error surface
         return RunResult(
@@ -289,12 +317,18 @@ def run_one_raw(prompt: Path, config_name: str, run_index: int) -> RunResult:
 
     for attempt in range(RAW_MAX_REPAIR + 1):
         try:
-            resp = client.messages.create(
-                model=model, max_tokens=4096,
+            # Stream so a long completion keeps bytes flowing — the LingModel
+            # proxy sits behind Cloudflare, which 524s a single non-streaming
+            # response that takes >~100s (hit on complex tasks).
+            with client.messages.stream(
+                model=model, max_tokens=RAW_MAX_TOKENS,
                 system=_RAW_SYSTEM_PROMPT,
                 messages=messages,
                 **thinking_kwargs(model),
-            )
+            ) as stream:
+                for _ in stream.text_stream:
+                    pass
+                resp = stream.get_final_message()
         except Exception as e:
             return RunResult(
                 prompt=_prompt_name(prompt), config=config_name, run_index=run_index,
@@ -350,6 +384,7 @@ def run_one_raw(prompt: Path, config_name: str, run_index: int) -> RunResult:
         except SyntaxError:
             pass
 
+    test_passed, test_total = grade_holdout(out_dir, _prompt_name(prompt))
     return RunResult(
         prompt=_prompt_name(prompt), config=config_name, run_index=run_index,
         tokens_input =sum(c.input_tokens  for c in tracker.calls),
@@ -359,6 +394,124 @@ def run_one_raw(prompt: Path, config_name: str, run_index: int) -> RunResult:
         verify_passed=passed,
         full_verified=len(files) if main_runs else 0,   # main-runs = end-to-end pass
         main_runs=main_runs,
+        test_passed=test_passed, test_total=test_total,
+        error="" if main_runs else last_error[:200],
+    )
+
+
+def _project_source(files: dict[str, str]) -> str:
+    """Render the current project as `# filename.py` code blocks — used to give
+    the stateless `claude -p` repair call the code it needs to fix."""
+    out = []
+    for fname, src in files.items():
+        out.append(f"```python\n# {fname}\n{src.rstrip()}\n```")
+    return "\n\n".join(out)
+
+
+def run_one_raw_cli(prompt: Path, config_name: str, run_index: int) -> RunResult:
+    """Frontier baseline via the authenticated `claude` CLI (real Opus). Runs in
+    an isolated temp cwd so no repo CLAUDE.md/.mcp.json leaks in. Single-shot
+    generation + a stateless repair loop (the failing code is re-sent each round)."""
+    import tempfile
+    cfg = CONFIGS[config_name]
+    model = cfg["raw"]
+    out_dir = WORK_DIR / config_name / f"{_prompt_name(prompt)}_run{run_index}"
+    _fresh_dir(out_dir)
+
+    request = prompt.read_text().strip()
+    base = (
+        f"{_RAW_SYSTEM_PROMPT}\n\nRequirement:\n{request}\n\n"
+        "Emit the ENTIRE project now — every file in its own "
+        "```python\\n# filename.py\\n...\\n``` block. Output ONLY code blocks: "
+        "no prose, and do NOT use any tools or create files, just print them."
+    )
+
+    tokens_in = tokens_out = 0
+    files: dict[str, str] = {}
+    main_runs = False
+    last_error = ""
+    cwd = tempfile.mkdtemp(prefix="qcli_")
+
+    repairs = 0            # main.py repair rounds used
+    gen_retries = 0        # extra regen tries when the model returns no code
+    MAX_GEN_RETRIES = 2
+    while True:
+        if not files:
+            msg = base                      # (re)generate from scratch
+        else:
+            msg = (
+                f"{_RAW_SYSTEM_PROMPT}\n\nRequirement:\n{request}\n\n"
+                f"This project failed when I ran `python main.py`:\n\n"
+                f"```\n{last_error[:2000]}\n```\n\nHere is the current project:\n\n"
+                f"{_project_source(files)}\n\nFix it. Emit the ENTIRE updated "
+                "project again — every file in its own ```python\\n# filename.py"
+                "\\n...\\n``` block. Only code blocks, no prose, no tools."
+            )
+        # `--tools ""` disables all tools so Opus PRINTS the project as fenced
+        # `# filename.py` blocks instead of writing files agentically (verified).
+        cmd = ["claude", "-p", msg, "--model", model,
+               "--output-format", "json", "--max-turns", "1", "--tools", ""]
+        try:
+            proc = subprocess.run(cmd, cwd=cwd, capture_output=True,
+                                  text=True, timeout=360)
+            data = json.loads(proc.stdout or "{}")
+        except Exception as e:
+            # e.g. a rate-limited hang hitting the timeout — stop and record it
+            # rather than burning more timeouts.
+            last_error = f"{e.__class__.__name__}: {str(e)[:120]}"
+            break
+        usage = data.get("usage", {}) or {}
+        tokens_in += (usage.get("input_tokens", 0)
+                      + usage.get("cache_read_input_tokens", 0)
+                      + usage.get("cache_creation_input_tokens", 0))
+        tokens_out += usage.get("output_tokens", 0)
+
+        parsed = _parse_raw_files(data.get("result", "") or "")
+        if parsed:
+            files = parsed
+        elif not files:
+            # No code blocks yet — Opus intermittently returns prose even with
+            # --tools ""; retry generation a couple times before giving up.
+            gen_retries += 1
+            if gen_retries <= MAX_GEN_RETRIES:
+                continue
+            last_error = "Model returned no code blocks after retries."
+            break
+
+        _fresh_dir(out_dir)
+        for fname, src in files.items():
+            path = out_dir / fname
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(src if src.endswith("\n") else src + "\n")
+
+        result = _run_main_capture(out_dir)
+        if result.returncode == 0:
+            main_runs = True
+            last_error = ""
+            break
+        last_error = (result.stderr or result.stdout or "unknown").strip()
+        repairs += 1
+        if repairs > RAW_MAX_REPAIR:
+            break
+
+    passed = 0
+    for fname in files:
+        try:
+            compile((out_dir / fname).read_text(), fname, "exec")
+            passed += 1
+        except SyntaxError:
+            pass
+
+    test_passed, test_total = grade_holdout(out_dir, _prompt_name(prompt))
+    return RunResult(
+        prompt=_prompt_name(prompt), config=config_name, run_index=run_index,
+        tokens_input=tokens_in, tokens_output=tokens_out,
+        tokens_total=tokens_in + tokens_out,
+        files_generated=len(files),
+        verify_passed=passed,
+        full_verified=len(files) if main_runs else 0,
+        main_runs=main_runs,
+        test_passed=test_passed, test_total=test_total,
         error="" if main_runs else last_error[:200],
     )
 
@@ -400,6 +553,95 @@ def _run_main(out_dir: Path) -> bool:
         return False
 
 
+# --------------------------- held-out grading -----------------------------
+
+def _holdout_test_file(prompt_name: str) -> Path | None:
+    f = HOLDOUT_DIR / f"{prompt_name}_test.py"
+    return f if f.exists() else None
+
+
+# Pinned public entry point per task: (module_file, [required symbols]).
+_ENTRYPOINTS: dict[str, tuple[str, list[str]]] = {
+    "mini_kv":    ("mini_kv.py",    ["MiniKV"]),
+    "mini_sheet": ("mini_sheet.py", ["Sheet", "CycleError"]),
+    "minilang":   ("minilang.py",   ["evaluate"]),
+}
+
+
+def _ensure_entrypoint(out_dir: Path, prompt_name: str) -> None:
+    """Normalize file layout so grading measures CODE, not where a tool happened
+    to put it. If the pinned module (e.g. mini_kv.py) doesn't actually define/
+    import the required symbols — missing, empty, or a stub — synthesize a
+    re-export shim pointing at whatever module(s) do define them (including
+    main.py, where Quinny's assembler sometimes inlines the class). No-op when
+    the pinned file already provides the symbols (the raw arms emit them
+    directly), so it never helps one config over another unfairly.
+    """
+    import re
+    spec = _ENTRYPOINTS.get(prompt_name)
+    if spec is None:
+        return
+    fname, symbols = spec
+    pinned = out_dir / fname
+
+    def defines(text: str, sym: str) -> bool:
+        return bool(re.search(rf"^\s*(class|def)\s+{re.escape(sym)}\b", text, re.M))
+
+    def provides(text: str, sym: str) -> bool:
+        # defines it, imports it, or binds it (covers `X = ...` and re-exports).
+        return (defines(text, sym)
+                or bool(re.search(rf"^\s*(from|import)\b.*\b{re.escape(sym)}\b", text, re.M))
+                or bool(re.search(rf"^\s*{re.escape(sym)}\s*=", text, re.M)))
+
+    if pinned.exists():
+        try:
+            if all(provides(pinned.read_text(), s) for s in symbols):
+                return
+        except Exception:
+            pass
+
+    # Prefer a real module that defines the symbol; fall back to main.py.
+    candidates = [p for p in sorted(out_dir.glob("*.py")) if p.name != fname]
+    order = ([p for p in candidates if p.name != "main.py"]
+             + [p for p in candidates if p.name == "main.py"])
+    lines = []
+    for sym in symbols:
+        for py in order:
+            try:
+                if defines(py.read_text(), sym):
+                    lines.append(f"from {py.stem} import {sym}")
+                    break
+            except Exception:
+                continue
+    if len(lines) == len(symbols):
+        pinned.write_text("\n".join(lines) + "\n")
+
+
+def grade_holdout(out_dir: Path, prompt_name: str) -> tuple[int, int]:
+    """Run the hidden acceptance suite (never shown to the generator) against
+    the produced project. Returns (passed, total). total==0 means the prompt
+    has no held-out suite. A project that won't import scores 0/total."""
+    import re
+    tf = _holdout_test_file(prompt_name)
+    if tf is None:
+        return (0, 0)
+    _ensure_entrypoint(out_dir, prompt_name)
+    total = len(re.findall(r"^\s*def test_", tf.read_text(), re.M))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(out_dir) + os.pathsep + env.get("PYTHONPATH", "")
+    try:
+        r = subprocess.run(
+            [sys.executable, "-m", "pytest", str(tf), "-q", "--tb=no",
+             "-o", "addopts=", "-p", "no:cacheprovider"],
+            cwd=str(out_dir), env=env, capture_output=True, text=True, timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return (0, total)
+    out = r.stdout + r.stderr
+    m = re.search(r"(\d+) passed", out)
+    return (int(m.group(1)) if m else 0, total)
+
+
 # ------------------------------- reporting --------------------------------
 
 def print_summary(results: list[RunResult]) -> None:
@@ -410,8 +652,10 @@ def print_summary(results: list[RunResult]) -> None:
     print("=" * 92)
     print("  BENCHMARK SUMMARY  (mean across runs)")
     print("=" * 92)
-    hdr = f"{'prompt':<20} {'config':<14} {'runs':>4} {'in':>10} {'out':>10} {'total':>10} {'verify':>8} {'full':>7} {'main':>5}"
+    hdr = (f"{'prompt':<14} {'config':<14} {'runs':>4} {'out_tok':>9} "
+           f"{'main':>5} {'TESTS':>7} {'pass/tot':>9}")
     print(hdr)
+    print("  (TESTS = held-out acceptance-suite pass rate — the real quality signal)")
     print("-" * len(hdr))
     for p in prompts:
         for c in configs:
@@ -419,16 +663,19 @@ def print_summary(results: list[RunResult]) -> None:
             if not cell:
                 continue
             n = len(cell)
-            files = statistics.mean(r.files_generated for r in cell) if cell else 0
-            verify = statistics.mean(r.verify_passed for r in cell) / max(files, 1)
-            full = statistics.mean(r.full_verified for r in cell) / max(files, 1)
             main = statistics.mean(1 if r.main_runs else 0 for r in cell)
-            tin  = statistics.mean(r.tokens_input  for r in cell)
             tout = statistics.mean(r.tokens_output for r in cell)
-            tot  = tin + tout
-            print(f"{p:<20} {c:<14} {n:>4} "
-                  f"{int(tin):>10,} {int(tout):>10,} {int(tot):>10,} "
-                  f"{verify:>7.0%} {full:>6.0%} {main:>4.0%}")
+            graded = [r for r in cell if r.test_total > 0]
+            if graded:
+                tp = statistics.mean(r.test_passed for r in graded)
+                tt = statistics.mean(r.test_total  for r in graded)
+                tests = tp / tt if tt else 0.0
+                tcell = f"{tp:.1f}/{tt:.0f}"
+                tpct = f"{tests:>6.0%}"
+            else:
+                tpct, tcell = "     —", "   —"
+            print(f"{p:<14} {c:<14} {n:>4} {int(tout):>9,} "
+                  f"{main:>4.0%} {tpct:>7} {tcell:>9}")
         print()
     print("=" * 92)
 
@@ -492,10 +739,18 @@ def main() -> int:
         warm_plans(prompts, args.planner_model, args.plan_format)
         return 0
 
-    # Ensure plans exist before running configs.
-    missing = [p for p in prompts if _resolve_plan_path(p) is None]
+    # Ensure plans exist — but only for configs that actually consume one (Quinny
+    # arms), using each config's plan_suffix. Raw arms need no plan.
+    plan_cfgs = [CONFIGS[c] for c in args.configs
+                 if not ("raw" in CONFIGS[c] or CONFIGS[c].get("via"))]
+    missing = []
+    for p in prompts:
+        for cfg in plan_cfgs:
+            if _resolve_plan_path(p, cfg.get("plan_suffix")) is None:
+                missing.append(f"{p.stem}"
+                               + (f".{cfg['plan_suffix']}" if cfg.get("plan_suffix") else ""))
     if missing:
-        print("Missing cached plans:", [p.name for p in missing])
+        print("Missing cached plans:", sorted(set(missing)))
         print("Run: python scripts/bench.py --warm-plans")
         return 2
 

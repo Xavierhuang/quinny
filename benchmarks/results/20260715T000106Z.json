@@ -1,0 +1,65 @@
+{
+  "started_at": "20260715T000106Z",
+  "runs": [
+    {
+      "prompt": "mini_kv",
+      "config": "raw-opus-cli",
+      "run_index": 0,
+      "tokens_input": 19701,
+      "tokens_output": 27890,
+      "tokens_total": 47591,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 2,
+      "main_runs": true,
+      "test_passed": 13,
+      "test_total": 13,
+      "error": ""
+    },
+    {
+      "prompt": "mini_kv",
+      "config": "raw-kimi",
+      "run_index": 0,
+      "tokens_input": 0,
+      "tokens_output": 4185,
+      "tokens_total": 4185,
+      "files_generated": 2,
+      "verify_passed": 2,
+      "full_verified": 2,
+      "main_runs": true,
+      "test_passed": 13,
+      "test_total": 13,
+      "error": ""
+    },
+    {
+      "prompt": "mini_kv",
+      "config": "quinny-kimi",
+      "run_index": 0,
+      "tokens_input": 4697,
+      "tokens_output": 27480,
+      "tokens_total": 32177,
+      "files_generated": 8,
+      "verify_passed": 6,
+      "full_verified": 6,
+      "main_runs": true,
+      "test_passed": 0,
+      "test_total": 13,
+      "error": ""
+    },
+    {
+      "prompt": "mini_kv",
+      "config": "quinny-kimi-good",
+      "run_index": 0,
+      "tokens_input": 3012,
+      "tokens_output": 11734,
+      "tokens_total": 14746,
+      "files_generated": 2,
+      "verify_passed": 1,
+      "full_verified": 1,
+      "main_runs": true,
+      "test_passed": 0,
+      "test_total": 13,
+      "error": ""
+    }
+  ]
+}

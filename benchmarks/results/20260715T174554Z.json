@@ -1,0 +1,65 @@
+{
+  "started_at": "20260715T174554Z",
+  "runs": [
+    {
+      "prompt": "minilang",
+      "config": "raw-haiku",
+      "run_index": 0,
+      "tokens_input": 27279,
+      "tokens_output": 23499,
+      "tokens_total": 50778,
+      "files_generated": 8,
+      "verify_passed": 8,
+      "full_verified": 0,
+      "main_runs": false,
+      "test_passed": 14,
+      "test_total": 18,
+      "error": "Traceback (most recent call last):\n  File \"/Users/weijiahuang/Desktop/Q/benchmarks/.work/raw-haiku/minilang_run0/main.py\", line 20, in <module>\n    result = evaluate(\"let add = fn(a, b) => a + b; add("
+    },
+    {
+      "prompt": "minilang",
+      "config": "raw-haiku",
+      "run_index": 1,
+      "tokens_input": 26512,
+      "tokens_output": 22793,
+      "tokens_total": 49305,
+      "files_generated": 8,
+      "verify_passed": 8,
+      "full_verified": 0,
+      "main_runs": false,
+      "test_passed": 15,
+      "test_total": 18,
+      "error": "Traceback (most recent call last):\n  File \"/Users/weijiahuang/Desktop/Q/benchmarks/.work/raw-haiku/minilang_run1/main.py\", line 20, in <module>\n    result4 = evaluate(\"let add = fn(a, b) => a + b; add"
+    },
+    {
+      "prompt": "minilang",
+      "config": "quinny-haiku-good",
+      "run_index": 0,
+      "tokens_input": 21337,
+      "tokens_output": 9868,
+      "tokens_total": 31205,
+      "files_generated": 9,
+      "verify_passed": 1,
+      "full_verified": 1,
+      "main_runs": false,
+      "test_passed": 0,
+      "test_total": 18,
+      "error": ""
+    },
+    {
+      "prompt": "minilang",
+      "config": "quinny-haiku-good",
+      "run_index": 1,
+      "tokens_input": 21078,
+      "tokens_output": 10160,
+      "tokens_total": 31238,
+      "files_generated": 9,
+      "verify_passed": 1,
+      "full_verified": 1,
+      "main_runs": false,
+      "test_passed": 0,
+      "test_total": 18,
+      "error": ""
+    }
+  ]
+}

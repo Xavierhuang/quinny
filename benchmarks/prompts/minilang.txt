@@ -1,0 +1,21 @@
+A pure-Python interpreter for a small expression language called MiniLang. Standard library only. The public API MUST live in a file named `minilang.py` and expose a single function `evaluate(source: str)` that runs a MiniLang program and returns the value of its last statement.
+
+A program is one or more statements separated by `;`. A statement is either a `let` binding or an expression. `evaluate` returns the value of the final statement (a `let` evaluates to the bound value).
+
+Language:
+- Literals: integers (`42`), floats (`3.5`), double-quoted strings (`"hi"`), and booleans `true` / `false`.
+- Arithmetic: `+ - * / %` with standard precedence (`* / %` bind tighter than `+ -`) and parentheses. `/` is float division. `+` on two strings concatenates them. Unary minus (`-x`).
+- Comparisons: `== != < <= > >=` producing a boolean.
+- Boolean logic: `and`, `or`, and unary `not`.
+- `let NAME = expr` binds a variable in the current scope; later statements/expressions can reference it.
+- Conditional expression: `if COND then A else B` — evaluates and returns A when COND is truthy, else B.
+- Functions: `fn(a, b) => expr` is a function value (a closure that captures the environment where it was defined). Call with `f(1, 2)`. Functions are first-class: they can be passed as arguments and returned.
+- Built-in functions available in the global scope: `len(x)`, `abs(x)`, `str(x)`.
+
+Errors:
+- Referencing an unbound variable raises `NameError`.
+- Division by zero raises `ZeroDivisionError`.
+
+Examples: `evaluate("2 + 3 * 4")` is `14`; `evaluate("let x = 5; x * 2")` is `10`; `evaluate("if 2 > 1 then 10 else 20")` is `10`; `evaluate("let add = fn(a, b) => a + b; add(3, 4)")` is `7`; `evaluate("let x = 10; let g = fn(n) => n + x; g(5)")` is `15`.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that calls `evaluate` on a few programs and exits 0. You may (and should) split the implementation across modules — lexer, parser, AST, environment, evaluator, builtins — but `minilang.py` must expose `evaluate` as specified.

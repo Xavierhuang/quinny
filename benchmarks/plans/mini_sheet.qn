@@ -1,0 +1,91 @@
+project MiniSheet
+
+component PythonStdLib
+    goal
+        Provide the Python standard library as the only allowed dependency.
+
+component FormulaParser
+    goal
+        Parse formula strings into an evaluable abstract syntax tree.
+
+component DependencyGraph
+    goal
+        Track which cells depend on which other cells for reactive updates.
+
+task CellReferenceParser
+    goal
+        Parse A1-style references into validated column and row indices.
+    output
+        ParsedCell
+    test
+        A1 maps to column 0 and row 0.
+        Z99 maps to column 25 and row 98.
+        AA1 is rejected as invalid.
+
+task FormulaLanguageParser
+    goal
+        Parse formulas containing numbers, references, operators, parentheses, and SUM ranges.
+    output
+        FormulaAst
+    depends
+        FormulaParser
+    test
+        "=1+2*3" parses with correct precedence.
+        "=SUM(A1:B2)" parses as a range function.
+
+task DependencyTracker
+    goal
+        Maintain the cell dependency graph and detect cycles before they are introduced.
+    output
+        DependencyMap
+    depends
+        DependencyGraph
+    test
+        A depends on B and B depends on C is acyclic.
+        A depends on B and B depends on A raises CycleError.
+
+task FormulaEvaluator
+    goal
+        Compute formula values by walking the abstract syntax tree.
+    output
+        EvaluatedValue
+    depends
+        FormulaLanguageParser
+        DependencyTracker
+    test
+        "=1+2" evaluates to 3.
+        Division by zero raises ValueError.
+
+task SheetClass
+    goal
+        Implement the Sheet class with set_cell and get_value methods.
+    depends
+        CellReferenceParser
+        FormulaEvaluator
+        DependencyTracker
+    test
+        Setting A1 to "5" returns integer 5.
+        Setting A1 to "hello" returns the string "hello".
+
+task CycleErrorClass
+    goal
+        Implement the CycleError exception class.
+    output
+        CycleError
+
+task PublicApiModule
+    goal
+        Expose Sheet and CycleError from mini_sheet.py.
+    depends
+        SheetClass
+        CycleErrorClass
+    success
+        Users can import Sheet and CycleError from mini_sheet.
+
+task DemoMain
+    goal
+        Provide a main.py demonstration that exercises the API and exits with status 0.
+    depends
+        PublicApiModule
+    success
+        Running python main.py completes without errors.

@@ -1,0 +1,57 @@
+project MiniSheet
+
+component Tokenizer
+    goal
+        Tokenize a spreadsheet formula string into a list of tokens: numeric literals, cell references like A1, the SUM function name, the range colon, parentheses, and the operators plus minus star slash.
+    constraint
+        Python standard library only. A cell reference is one uppercase letter A to Z followed by a positive integer row.
+
+component Evaluator
+    goal
+        Evaluate a tokenized formula to a number, given a resolver callable that maps a cell reference to its current value.
+    uses
+        Tokenizer
+    depends
+        Tokenizer
+    constraint
+        Support plus minus star slash with standard precedence where star and slash bind tighter than plus and minus, and support parentheses.
+    constraint
+        Support SUM(TopLeft:BottomRight) which sums every cell in the inclusive rectangular block between the two corner references.
+    constraint
+        A reference to an empty cell resolves to 0. Division by zero raises ValueError.
+
+component Sheet
+    goal
+        The public spreadsheet class named Sheet and an exception class named CycleError, tying together tokenizing, evaluation, dependency tracking, and cycle detection. This is the public API and both Sheet and CycleError live in this module.
+    uses
+        Tokenizer
+        Evaluator
+    depends
+        Tokenizer
+        Evaluator
+    constraint
+        Sheet() constructs an empty sheet. set_cell(ref, content) where content is always a string: if it starts with = it is a formula; else if it parses as a number store that number as int when integral; otherwise store the raw string.
+    constraint
+        get_value(ref): an empty or unset cell is 0; a numeric cell returns its number; a string cell returns its string; a formula cell returns its evaluated result. Values always reflect current inputs, so updating a cell updates everything that transitively depends on it.
+    constraint
+        Maintain a dependency graph. If a set_cell call would introduce a dependency cycle where a cell depends on itself directly or transitively, raise CycleError and do NOT apply the change, leaving the sheet exactly as it was before the call.
+    test
+        A1=2, A2=3, A3='=A1+A2' gives get_value(A3)==5; '=2+3*4' gives 14; '=(2+3)*4' gives 20; '=6/2' gives 3.
+    test
+        A1=1, A2='=A1+1', A3='=A2+1' gives get_value(A3)==3; then setting A1=10 gives get_value(A3)==12.
+    test
+        A1=1, A2=2, A3=3, B1='=SUM(A1:A3)' gives 6; SUM over a rectangular range sums every cell in the block.
+    test
+        set_cell('A1','=A1') raises CycleError; with A1='=B1', set_cell('B1','=A1') raises CycleError and leaves get_value(A1)==0.
+    test
+        a formula '=1/0' raises ValueError; a reference to an empty cell evaluates to 0.
+    success
+        Sheet and CycleError implement literals, arithmetic with precedence and parentheses, SUM ranges, dependency propagation, and cycle rejection exactly as specified.
+
+component Demo
+    goal
+        A runnable main.py that exercises Sheet with literals, formulas, a SUM range, dependency propagation after an update, and a rejected cycle, printing results and exiting with status 0.
+    uses
+        Sheet
+    depends
+        Sheet
