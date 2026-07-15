@@ -24,6 +24,11 @@ satisfies it.
 Modern agents (Claude Code, Cursor) already write code well — fast, one-shot.
 Quinny doesn't compete with that; it **holds the output to a contract you own.**
 
+**Don't want to write the contract?** You don't have to. `quinny scaffold "build me
+a store for selling trees"` scopes the part where correctness matters (the pricing,
+cart, and inventory *logic* — not the UI, which `verify` can't gate anyway), drafts
+the acceptance criteria, and stubs the module. You go straight to implement → verify.
+
 ```
 write spec.qn  ──►  let any agent write/change the code  ──►  quinny verify  ──►  ✓ / ✗
    (once)              (its strength — fast, one-shot)          (your gate)
@@ -162,6 +167,7 @@ shown as **advisory** (they're often unfalsifiable, so they never fail your buil
 
 | Command | What it does | Needs an LLM? |
 |---|---|---|
+| `quinny scaffold "<english>"` | Scope the testable logic from a plain idea → draft a contract + a module stub | **yes** |
 | `quinny check <file>` | Parse + validate the task graph (missing deps, cycles) | no |
 | `quinny graph <file>` | Print the task graph | no |
 | `quinny plan  <file>` | Show execution layers | no |

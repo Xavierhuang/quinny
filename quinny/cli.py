@@ -298,6 +298,28 @@ def cmd_gen(request: str, output: Path | None, model: str, max_retries: int) -> 
     return 0
 
 
+def cmd_scaffold(idea: str, out_dir: Path, lang: str, model: str) -> int:
+    from quinny.scaffold import scaffold
+    console.print(f"Scoping the verifiable logic in [italic]“{idea}”[/italic] "
+                  f"({lang}, via {model})…\n")
+    try:
+        s = scaffold(idea, out_dir, lang=lang, model=model)
+    except (QuinnyParseError, ValueError) as e:
+        console.print(f"[red]error:[/red] {e}")
+        return 1
+    console.print(f"[bold]{s.project}[/bold] — contract for the money/logic core, "
+                  f"{s.criteria} acceptance criteria.\n")
+    console.print(f"  contract : [bold]{s.qn_path}[/bold]")
+    console.print(f"  stub     : [bold]{s.stub_path}[/bold]\n")
+    console.print("Next:")
+    console.print(f"  1. Implement [bold]{s.stub_path.name}[/bold] (or ask an agent to).")
+    console.print(f"  2. Gate it:  [bold]quinny verify {s.qn_path} {out_dir}"
+                  f"{'' if lang=='python' else ' --lang js'}[/bold]")
+    console.print(f"  3. Lock it:  add [bold]--emit {s.qn_path.stem}_contract_test"
+                  f".{'py' if lang=='python' else 'js'}[/bold] and commit for CI.")
+    return 0
+
+
 def cmd_verify(file: Path, impl: Path, model: str, lang: str = "python",
                emit: Path | None = None, suite: Path | None = None) -> int:
     from quinny.contract import verify, run_saved
@@ -364,6 +386,15 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("file", type=Path)
 
+    scaf = sub.add_parser("scaffold",
+                          help="From plain English, draft a contract for the "
+                               "verifiable logic + a module stub to implement.")
+    scaf.add_argument("idea", help="Plain-English description of what to build.")
+    scaf.add_argument("-o", "--out-dir", type=Path, default=Path("."),
+                      help="Where to write the contract + stub (default: .).")
+    scaf.add_argument("--lang", choices=["python", "js"], default="python")
+    scaf.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"))
+
     ver = sub.add_parser("verify",
                          help="Compile a plan's test/success criteria into a "
                               "pytest suite and run it against an implementation.")
@@ -427,6 +458,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.cmd == "scaffold":
+            return cmd_scaffold(args.idea, args.out_dir, args.lang, args.model)
         if args.cmd == "verify":
             return cmd_verify(args.file, args.impl, args.model,
                               args.lang, args.emit, args.suite)
