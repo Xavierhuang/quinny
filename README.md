@@ -79,7 +79,9 @@ so CI runs it deterministically, with no model in the loop — see
 
 ### How reliable is the gate?
 
-Measured on implementations with known, exact defects (`benchmarks/verify_usability.py`):
+Two benchmarks, both in [`benchmarks/`](benchmarks/):
+
+**Synthetic** — implementations with known, exact defects (`verify_usability.py`):
 
 | Metric | Result |
 |---|---|
@@ -87,6 +89,21 @@ Measured on implementations with known, exact defects (`benchmarks/verify_usabil
 | False-FAIL (fails correct code) | **0 / 60** |
 | Accuracy vs ground truth | **100%** |
 | Consistency across runs | **100%** |
+
+**Real-world** — 13 model-generated implementations across three domains (a data
+structure, a formula engine, a 9-module interpreter), verify's gate vs an
+*independent* hand-written held-out suite (`verify_realworld.py`):
+
+| Metric | Result |
+|---|---|
+| Agreement with held-out ground truth | **12 / 13 = 92%** |
+| Mean gate score on **good** impls | **89%** |
+| Mean gate score on **broken** impls | **0%** |
+| False-PASS (green-lit broken code) | **0 / 13** |
+
+Across both, verify has **never once passed a broken implementation.** The only
+disagreements were verify being *stricter* than the reference — the safe
+direction for a gate.
 
 Concrete `test` criteria **gate** the build; high-level `success` summaries are
 shown as **advisory** (they're often unfalsifiable, so they never fail your build).
