@@ -163,6 +163,28 @@ deterministic — and reliability rises with a stronger generation model.
 Concrete `test` criteria **gate** the build; high-level `success` summaries are
 shown as **advisory** (they're often unfalsifiable, so they never fail your build).
 
+### Does it actually improve the code an agent produces?
+
+The tables above show verify *catches* broken code. This measures the **outcome**:
+give the same model the loop it enables — write → verify → fix the failures →
+repeat — and grade the result with an *independent* held-out suite. Full method +
+reproduce steps in [`benchmarks/VERIFY_LOOP_RESULTS.md`](benchmarks/VERIFY_LOOP_RESULTS.md).
+
+| Model | one-shot (no Quinny) | verify-loop (Quinny) |
+|---|---|---|
+| **Haiku** | 50% — swings 11/0/9 across runs | **100%** |
+| **Kimi (k2.7)** | 50% — swings 14/0 across runs | **100%** |
+
+**~1.4–2.4× the tokens and time → correctness 50% → 100%, for both models.**
+
+The honest read: it doesn't make a model *smarter* — it makes it **reliable.**
+One-shot, both models sometimes nail it (14/14) and sometimes ship silent garbage
+(0/14); the loop turns those unseen mistakes into an objective fix signal and lands
+at correct every time. You pay ~2× to never ship the broken half — worth it for
+checkout math, not for a landing page. On a run the model already gets right, the
+loop adds no correctness (zero fix rounds) — it's insurance, not overhead you always
+pay. (Opus pending — rate-limited during testing; the mechanism is model-independent.)
+
 ## The CLI
 
 | Command | What it does | Needs an LLM? |
