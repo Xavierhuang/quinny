@@ -350,7 +350,8 @@ def cmd_verify(file: Path, impl: Path, model: str, lang: str = "python",
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="quinny",
-        description="Quinny — task-oriented intent language compiler (v0.1)",
+        description="Quinny — an executable specification language: verify "
+                    "code against acceptance criteria (v0.1)",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 

@@ -5,12 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "quinny"
 version = "0.1.0"
-description = "A task-oriented intent language for AI coding agents."
+description = "An executable specification language: verify any implementation against acceptance criteria in a .qn contract."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Weijia Huang" }]
-keywords = ["ai", "codegen", "intent-language", "dsl", "llm", "planning", "agents"]
+keywords = ["specification", "verification", "acceptance-testing", "contract",
+            "dsl", "llm", "ci", "agents"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

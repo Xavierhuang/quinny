@@ -1,4 +1,5 @@
-"""Quinny — a task-oriented intent language for AI coding agents."""
+"""Quinny — an executable specification language: verify any implementation
+against acceptance criteria written in a .qn contract."""
 
 from quinny.nodes import (
     Project,

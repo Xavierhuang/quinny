@@ -1,23 +1,48 @@
 # Quinny
 
-**An intent language that doubles as an executable acceptance contract.**
+**An executable specification language.**
 
-You describe *what* should be built — goals, inputs/outputs, dependencies,
-constraints, and concrete acceptance `test`s — in a small, reviewable `.qn` file.
-Quinny turns those acceptance criteria into a runnable test suite and **verifies
-any implementation against them** — code written by a human, by Claude Code, by
-Cursor, by anything.
+Describe *what* your software must do — its components and their concrete
+acceptance criteria — in a small, reviewable `.qn` file. Quinny turns those
+criteria into a runnable test suite and **verifies any implementation against
+them**: code written by a human, by Claude Code, by Cursor — in Python or
+JavaScript. Write the contract once; enforce it forever, in any language, in CI.
 
 ```
-intent.qn  ──►  quinny verify  ──►  ✓/✗ per acceptance criterion, on ANY code
-   │                    │
-   │ reviewable,        │ compiles your `test` criteria into a pytest suite,
-   │ diffable spec      │ runs it against the implementation, gates the build
+spec.qn ──► quinny verify ──► ✓/✗ per acceptance criterion, on ANY code, ANY language
+   │                │
+   │ reviewable     │ compiles your `test` criteria into a real test suite
+   │ contract       │ (pytest / node:test), runs it, gates the build
 ```
 
 A `.qn` file is **not code that runs** — it's a structured, version-controllable
-description of intent *and* the contract that decides whether an implementation
-satisfies it. Write "done" once; enforce it forever, in CI.
+statement of intent *and* the contract that decides whether an implementation
+satisfies it.
+
+## How it fits your dev cycle
+
+Modern agents (Claude Code, Cursor) already write code well — fast, one-shot.
+Quinny doesn't compete with that; it **holds the output to a contract you own.**
+
+```
+write spec.qn  ──►  let any agent write/change the code  ──►  quinny verify  ──►  ✓ / ✗
+   (once)              (its strength — fast, one-shot)          (your gate)
+```
+
+| Instead of… | With Quinny |
+|---|---|
+| Re-reading the diff to check requirements still hold | `quinny verify` checks them, per criterion |
+| Hand-writing acceptance tests (the `mini_kv` contract → 147 lines) | generated from the spec you already wrote |
+| Re-prompting an LLM to "review this against the spec" every change | emit the suite **once**, run it free forever |
+| Re-specifying for each tool or model you try | one `.qn` gates them all, unchanged |
+
+**The token math** (real, measured with Haiku): generating a contract suite costs a
+**one-time ~2,600 tokens (~$0.008)** per spec change. After you emit and commit it,
+every CI run and every code change is verified for **0 tokens, deterministically**
+(`--suite`, no model in the loop). Your LLM spend is `O(spec changes)`, not
+`O(commits)` — push 50 times between spec edits and you still paid once. The payoff
+compounds when an agent refactors or you swap models: the contract stays fixed and
+catches the moment a change breaks a requirement, before it ships.
 
 ---
 

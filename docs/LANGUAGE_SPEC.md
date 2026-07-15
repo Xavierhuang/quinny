@@ -1,8 +1,11 @@
 # Quinny Language Specification — v0.1
 
-Quinny is a **task-oriented intent language**. A Quinny program is not code
-that runs; it is a **structured description of what should be built** that a
-planner and coding agents consume.
+Quinny is an **executable specification language**. A Quinny program is not code
+that runs; it is a **structured description of what a piece of software must do** —
+its components and their acceptance criteria. Its primary use is `quinny verify`,
+which compiles the `test`/`success` criteria into a test suite and checks any
+implementation against them. (`task`/`component`/`depends`/`uses` organize the
+spec and were originally used to drive code generation, now experimental.)
 
 ## 1. Philosophy
 
