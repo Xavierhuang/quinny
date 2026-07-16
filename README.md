@@ -387,6 +387,32 @@ defense in depth. B still isn't a clean 100% (one run landed at
 15/17), so the loop remains "insurance," not a magic upgrade — but
 it's now insurance that pays out net-positive.
 
+**Do the fixes generalize?** Tested on `minilang` (a mini interpreter,
+18 held-out tests — different domain than fsheet, same fix-round
+harness):
+
+| Run | held-out | notes |
+|---|---:|---|
+| A one-shot run 0 | 0/18 | consistently broken |
+| A one-shot run 1 | 0/18 | (both runs, not a swing) |
+| B verify-loop run 0 | **15/18** | 2 fix rounds — massive lift |
+| B verify-loop run 1 | 0/18 | 2 fix rounds — loop couldn't find a fix |
+
+**A mean 0% → B mean 42%** at **5.3× tokens, 2.7× time**. Yes, the fixes
+generalize — the loop turned "totally broken" into "83% correct" in
+one B run. But variance is high on tasks the model genuinely can't
+partially do: the other B run stayed at 0. When Haiku has *no* mental
+model of the problem, the loop sometimes finds a working path and
+sometimes doesn't.
+
+**Loop-effect taxonomy** across the three tested (model, task) pairs:
+
+| One-shot behavior | Loop effect | Example |
+|---|---|---|
+| Mostly-right + swings | Loop closes swing → 100% reliably | Kimi mini_sheet 67% → 100% |
+| Mostly-right + no swings | +18pp on average, some variance | Haiku fsheet 94% → 94% (with fixes) |
+| Consistently broken | Big mean lift (+40pp), high variance | Haiku minilang 0% → 42% |
+
 ## The CLI
 
 | Command | What it does | Needs an LLM? |
