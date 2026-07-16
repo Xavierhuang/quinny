@@ -284,7 +284,7 @@ reproduce steps in [`benchmarks/VERIFY_LOOP_RESULTS.md`](benchmarks/VERIFY_LOOP_
 | **Haiku** | 50% — swings 11/0/9 across runs | **100%** |
 | **Kimi (k2.7)** | 67% — swings 14/0/14 across runs | **100%** |
 
-**~1.4–2.4× the tokens and time → correctness 50% → 100%, for both models.**
+**~1.4–2.4× the tokens and time → correctness ~50–67% → 100%, for both models.**
 
 The honest read: it doesn't make a model *smarter* — it makes it **reliable.**
 One-shot, both models sometimes nail it (14/14) and sometimes ship silent garbage
