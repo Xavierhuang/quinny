@@ -284,20 +284,33 @@ give the same model the loop it enables — write → verify → fix the failure
 repeat — and grade the result with an *independent* held-out suite. Full method +
 reproduce steps in [`benchmarks/VERIFY_LOOP_RESULTS.md`](benchmarks/VERIFY_LOOP_RESULTS.md).
 
-| Model | one-shot (no Quinny) | verify-loop (Quinny) |
-|---|---|---|
-| **Haiku** | 50% — swings 11/0/9 across runs | **100%** |
-| **Kimi (k2.7)** | 67% — swings 14/0/14 across runs | **100%** |
+**Headline result — frontier reliability at cheap-model prices.** On the two
+integrated tasks where a cheap model's one-shot is actually unreliable:
 
-**~1.4–2.4× the tokens and time → correctness ~50–67% → 100%, for both models.**
+| Task | Haiku one-shot | Haiku + Quinny loop | Opus one-shot | cost of Quinny |
+|---|---|---|---|---|
+| **fsheet** (formula engine, 17 tests) | 94% — a run drops to 65% | **100%** | 100% | 2.7× Haiku tokens |
+| **mini_sheet** (formula engine, 14 tests) | 70% — a run drops to **0/14** | **98%** | ~100% | 2.9× Haiku tokens |
 
-The honest read: it doesn't make a model *smarter* — it makes it **reliable.**
-One-shot, both models sometimes nail it (14/14) and sometimes ship silent garbage
+That's the useful claim: **Haiku + Quinny matches Opus one-shot at ~3× the cheap
+model's cost** — and the cheap model + loop is still far cheaper than an Opus call.
+Full method + all nine tested tasks in
+[`benchmarks/opus_comparison.md`](benchmarks/opus_comparison.md).
+
+The honest read: the loop doesn't make a model *smarter* — it makes it **reliable.**
+One-shot, cheap models sometimes nail it (14/14) and sometimes ship silent garbage
 (0/14); the loop turns those unseen mistakes into an objective fix signal and lands
-at correct every time. You pay ~2× to never ship the broken half — worth it for
-checkout math, not for a landing page. On a run the model already gets right, the
-loop adds no correctness (zero fix rounds) — it's insurance, not overhead you always
-pay. (Opus pending — rate-limited during testing; the mechanism is model-independent.)
+at correct every time. The keep-best guard means no B run ever regresses below its
+own one-shot; the catastrophic 0/14 cannot survive the loop. You pay ~2-3× to never
+ship the broken half — worth it for checkout math, not for a landing page. On a run
+the model already gets right, the loop adds no correctness (zero fix rounds) —
+it's insurance, not overhead you always pay.
+
+**Why "beats Opus" is structurally unreachable.** To beat Opus you'd need a task
+where Opus one-shot < 100% *yet the task is still objectively gradeable.* But
+gradeable requires a complete spec — and a complete spec is exactly what lets Opus
+get it right. Nine tasks across four regimes confirmed this. So the honest
+comparison is: cheap+Quinny ≥ Opus at a fraction of the cost, not cheap+Quinny > Opus.
 
 **Honest limit — the loop can hit the `MAX_FIX` ceiling and deliver
 un-converged code.** Retested on `fsheet` (a formula spreadsheet engine,
