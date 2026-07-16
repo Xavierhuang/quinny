@@ -132,7 +132,9 @@ def _decl_to_json(decl: Task | Component) -> dict:
             if f.kind == "goal":
                 out["goal"] = f.lines[0] if f.lines else ""
             else:
-                out[f.kind] = list(f.lines)
+                # Multiple `test`/`success` blocks each carry one criterion;
+                # accumulate across fields rather than overwriting.
+                out.setdefault(f.kind, []).extend(f.lines)
         elif isinstance(f, NameField):
             out[f.kind] = list(f.names)
     if decl.subtasks:

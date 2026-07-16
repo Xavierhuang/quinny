@@ -1,0 +1,26 @@
+{
+  "project": "SubtleKV",
+  "declarations": [
+    {
+      "kind": "component",
+      "name": "Store",
+      "goal": "A small KV with LRU eviction and TTL, safe against subtle boundary bugs."
+    },
+    {
+      "kind": "task",
+      "name": "API",
+      "goal": "Round-trip API around Store with tricky edge cases.",
+      "depends": [
+        "Store"
+      ],
+      "test": [
+        "With capacity=3: set a=1, b=2, c=3, d=4 \u2014 exists(a) is False, len is 3.",
+        "sum_values() over {\"a\": 1.0, \"b\": float(\"nan\"), \"c\": 2.0} returns NaN, not 3.0.",
+        "set(\"cafe\u0301\", 1); get(\"caf\u00e9\") returns 1 (NFC/NFD normalize equal).",
+        "get(\"nonexistent\") raises KeyError, not a bare Exception.",
+        "set(\"k\", 1, ttl=10**18) then exists(\"k\") is True (no overflow to expired).",
+        "set(\"k\", 1, ttl=0) then exists(\"k\") is False (ttl=0 means expired now)."
+      ]
+    }
+  ]
+}

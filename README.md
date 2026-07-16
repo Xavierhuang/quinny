@@ -241,6 +241,15 @@ and no code changes to add a new one. Full recipe in
 Every library that lands there is one more independent data point for
 the gate's honesty on code the Quinny author didn't touch.
 
+**Format equivalence: DSL vs JSON** (`verify_formats.py`) — same
+acceptance criteria expressed once in `.qn` DSL and once in `.json`.
+Both formats extract to the same 6 criteria and produce identical
+verify verdicts against the same committed suite. Conclusion: **the
+DSL is a matter of taste, not capability** — teams that prefer JSON
+can use it and lose nothing. (Bug fix landed in the same commit:
+`ast_to_json` was silently dropping repeated `test` blocks, so this
+claim was actually broken in main until this benchmark surfaced it.)
+
 **Across all six benchmarks: 0 false-PASS on ~90 implementations** spanning
 synthetic defects, real model-generated code, CVE-shaped bug patterns,
 subtle-defect classes, and a real published library. The handful of
