@@ -23,7 +23,7 @@ from quinny._capabilities import make_client as _real_make_client  # noqa: E402
 import quinny.contract as QC  # noqa: E402
 import verify_loop as V  # noqa: E402
 
-RUNS = 2
+RUNS = int(os.environ.get("QUINNY_RUNS", "2"))
 _METER = {"in": 0, "out": 0}
 
 
