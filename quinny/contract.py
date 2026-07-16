@@ -40,6 +40,7 @@ class Criterion:
 class CriterionResult:
     criterion: Criterion
     status: str    # "PASS" | "FAIL" | "ERROR" | "MISSING"
+    detail: str = ""   # failure detail (expected-vs-got) for FAIL/ERROR rows
 
 
 def extract_criteria(project: Project) -> list[Criterion]:
@@ -226,6 +227,26 @@ def _parse_pytest(out: str) -> dict[int, str]:
     return status
 
 
+def _detail_pytest(out: str) -> dict[int, str]:
+    """Pull the expected-vs-got line out of each failing test's `--tb=short`
+    block, so the repair loop can feed the model WHAT was wrong (not just THAT
+    it failed). Blocks are headed `____ test_cNN ____`; the `E ...` lines carry
+    the assertion (e.g. `AssertionError: assert '#ERR!' == '#DIV/0!'`)."""
+    details: dict[int, list[str]] = {}
+    cur: int | None = None
+    for line in out.splitlines():
+        h = re.match(r"^_{3,}\s*test_c(\d+)\b.*_{3,}\s*$", line)
+        if h:
+            cur = int(h.group(1))
+            details.setdefault(cur, [])
+            continue
+        if cur is not None:
+            s = line.strip()
+            if s.startswith("E ") or s.startswith("E\t"):
+                details[cur].append(s[1:].strip())
+    return {i: " ".join(lines)[:300] for i, lines in details.items() if lines}
+
+
 def _parse_tap(out: str) -> dict[int, str]:
     status = {}
     for line in out.splitlines():
@@ -317,8 +338,9 @@ mutating methods need a `var`; `throws` methods need `try` inside do/catch."""
 LANGS = {
     "python": {
         "system": _SYSTEM_PY, "surface": _surface_py, "parse": _parse_pytest,
+        "detail": _detail_pytest,
         "suffix": "_quinny_contract_test.py",
-        "cmd": lambda p: [sys.executable, "-m", "pytest", str(p), "-v", "--tb=no",
+        "cmd": lambda p: [sys.executable, "-m", "pytest", str(p), "-v", "--tb=short",
                           "-o", "addopts=", "-p", "no:cacheprovider"],
         "env": lambda impl: {"PYTHONPATH": str(impl)},
     },
@@ -382,11 +404,15 @@ def run_suite(impl_dir: Path, suite_src: str, criteria: list[Criterion],
               lang: str = "python") -> list[CriterionResult]:
     cfg = LANGS[lang]
     status = {c.index: "MISSING" for c in criteria}
+    details: dict[int, str] = {}
     # Compiled languages (Swift): compile the suite with the implementation, run.
     if "compile_run" in cfg:
         out = cfg["compile_run"](impl_dir, suite_src)
         status.update(cfg["parse"](out))
-        return [CriterionResult(c, status[c.index]) for c in criteria]
+        if cfg.get("detail"):
+            details = cfg["detail"](out)
+        return [CriterionResult(c, status[c.index], details.get(c.index, ""))
+                for c in criteria]
     with tempfile.NamedTemporaryFile("w", suffix=cfg["suffix"],
                                      dir=str(impl_dir), delete=False) as fh:
         fh.write(suite_src)
@@ -396,15 +422,21 @@ def run_suite(impl_dir: Path, suite_src: str, criteria: list[Criterion],
         try:
             r = subprocess.run(cfg["cmd"](suite_path), cwd=str(impl_dir), env=env,
                                capture_output=True, text=True, timeout=120)
-            status.update(cfg["parse"](r.stdout + r.stderr))
+            out = r.stdout + r.stderr
+            status.update(cfg["parse"](out))
+            if cfg.get("detail"):
+                details = cfg["detail"](out)
         except subprocess.TimeoutExpired:
             # A runaway implementation (e.g. infinite recursion/loop on a cyclic
             # input) hangs the suite. Treat every criterion as failed rather than
             # crashing the caller — a suite that can't terminate is not passing.
             status = {c.index: "FAIL" for c in criteria}
+            details = {c.index: "timed out (no output / non-terminating)"
+                       for c in criteria}
     finally:
         suite_path.unlink(missing_ok=True)
-    return [CriterionResult(c, status[c.index]) for c in criteria]
+    return [CriterionResult(c, status[c.index], details.get(c.index, ""))
+            for c in criteria]
 
 
 def verify(plan_path: Path, impl_dir: Path, model: str,

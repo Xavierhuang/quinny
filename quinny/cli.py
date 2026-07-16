@@ -422,8 +422,12 @@ def cmd_verify(file: Path, impl: Path, model: str, lang: str = "python",
         result = mark.get(r.status, r.status)
         if not gating:
             result = f"[dim]{result}[/dim]"
-        table.add_row(str(r.criterion.index), kind_label,
-                      text[:66] + ("…" if len(text) > 66 else ""), result)
+        crit_cell = text[:66] + ("…" if len(text) > 66 else "")
+        # Show WHAT failed (expected-vs-got), not just THAT it failed — makes the
+        # gate actionable for a human or an agent iterating against it.
+        if r.status in ("FAIL", "ERROR") and r.detail:
+            crit_cell += f"\n[dim]↳ {r.detail[:80]}[/dim]"
+        table.add_row(str(r.criterion.index), kind_label, crit_cell, result)
     console.print(table)
     color = "green" if passed == total else ("red" if passed == 0 else "yellow")
     console.print(f"\n[{color}]{passed}/{total} gating (test) criteria satisfied[/{color}]"

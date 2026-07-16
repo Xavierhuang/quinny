@@ -272,7 +272,10 @@ def loop():
                else run_saved(PLAN, d, suite))
         res = [r for r in res if r.criterion.kind == "test"]
         passed = sum(1 for r in res if r.status == "PASS")
-        failed = [r.criterion.text for r in res if r.status != "PASS"]
+        # Carry the expected-vs-got detail so the fix turn learns WHAT was wrong,
+        # not just THAT it failed — this is what breaks a re-guessing stall.
+        failed = [r.criterion.text + (f"\n    → {r.detail}" if r.detail else "")
+                  for r in res if r.status != "PASS"]
         return passed, failed
 
     files = generate(d)
