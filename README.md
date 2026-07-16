@@ -366,6 +366,7 @@ code — where the base model is already reliable on the task.
 | Command | What it does | Needs an LLM? |
 |---|---|---|
 | `quinny scaffold "<english>"` | Scope the testable logic from a plain idea → draft a contract + a module stub | **yes** |
+| `quinny import <spec.md>` | Turn a [GitHub Spec Kit](https://github.com/github/spec-kit) `spec.md` into a `.qn` contract (stories → components, Given/When/Then → gating tests) | no |
 | `quinny check <file>` | Parse + validate the task graph (missing deps, cycles) | no |
 | `quinny graph <file>` | Print the task graph | no |
 | `quinny plan  <file>` | Show execution layers | no |

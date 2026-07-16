@@ -23,7 +23,7 @@ from rich.tree import Tree
 
 from quinny.graph import GraphError, TaskGraph, build_graph
 from quinny.nodes import Component, Project, Task
-from quinny.parser import QuinnyParseError, parse_file
+from quinny.parser import QuinnyParseError, parse, parse_file
 
 
 console = Console()
@@ -50,6 +50,37 @@ def cmd_check(path: Path) -> int:
     build_graph(project)
     console.print(f"[green]OK[/] {path} — project '{project.name}', "
                   f"{len(project.declarations)} declaration(s).")
+    return 0
+
+
+def cmd_import(path: Path, output: Path | None) -> int:
+    from quinny.speckit import spec_to_qn
+    notes = Console(stderr=True)
+    res = spec_to_qn(path.read_text())
+    if output is not None:
+        output.write_text(res.qn)
+    else:
+        sys.stdout.write(res.qn)
+    s = res.stats
+    where = str(output) if output else "stdout"
+    notes.print(f"[green]OK[/] imported {path} → {where}: "
+                f"{s['stories']} component(s), {s['tests']} gating test(s), "
+                f"{s['constraints']} constraint(s), {s['successes']} success line(s).")
+    if res.clarifications:
+        notes.print(f"[yellow]{len(res.clarifications)} unresolved "
+                    f"[NEEDS CLARIFICATION] marker(s) skipped[/yellow] — resolve "
+                    f"them in the spec, then re-import:")
+        for c in res.clarifications:
+            notes.print(f"  [dim]· {c}[/dim]")
+    # Validate the emitted contract actually parses (guards against Spec Kit
+    # template drift producing something Quinny can't read).
+    try:
+        build_graph(parse(res.qn))
+        notes.print("[green]validated[/] — contract parses. Next: "
+                    "[bold]quinny verify[/bold] it against an implementation.")
+    except (QuinnyParseError, GraphError) as e:
+        notes.print(f"[red]warning:[/red] emitted contract did not validate: {e}")
+        return 1
     return 0
 
 
@@ -417,6 +448,13 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("file", type=Path)
 
+    imp = sub.add_parser("import",
+                         help="Turn a GitHub Spec Kit spec.md into a .qn "
+                              "contract (deterministic — no LLM).")
+    imp.add_argument("file", type=Path, help="Path to a Spec Kit spec.md.")
+    imp.add_argument("-o", "--output", type=Path, default=None,
+                     help="Write the .qn here (default: stdout).")
+
     scaf = sub.add_parser("scaffold",
                           help="From plain English, draft a contract for the "
                                "verifiable logic + a module stub to implement.")
@@ -489,6 +527,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.cmd == "import":
+            return cmd_import(args.file, args.output)
         if args.cmd == "scaffold":
             return cmd_scaffold(args.idea, args.out_dir, args.lang, args.model)
         if args.cmd == "verify":
