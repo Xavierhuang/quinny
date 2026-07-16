@@ -2,6 +2,9 @@
 
 **An executable specification language.**
 
+Created by **[LingCode Baby](https://lingcode.dev/baby.html)** — a macOS IDE
+that embeds Quinny as its built-in verify loop.
+
 Describe *what* your software must do — its components and their concrete
 acceptance criteria — in a small, reviewable `.qn` file. Quinny turns those
 criteria into a runnable test suite and **verifies any implementation against
