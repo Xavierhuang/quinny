@@ -159,7 +159,9 @@ path traversal, session-token expiry ignored, rate-limit off-by-one):
 
 **Scale** (`verify_scale.py`) — sweep from 10 → 1000 acceptance criteria per
 spec. This is the harshest coherence test: does the emit stay honest as
-the spec grows?
+the spec grows? Two models tested; the ceiling is model-specific:
+
+*Haiku 4.5*
 
 | N criteria | emit time | suite lines | passed / N | coverage | verdict |
 |---:|---:|---:|---:|---:|---|
@@ -171,21 +173,35 @@ the spec grows?
 | 500  | 58.3s | 366 | 0/500   | **0%**  | **collapsed** |
 | 1000 | 55.7s | 157 | 0/1000  | **0%**  | **collapsed** |
 
-**Honest limit named**: on Haiku 4.5 the emit stays coherent through ~100
-criteria and collapses past 250 — the model runs into its output-token
-ceiling and either truncates the suite or gives up (note `suite lines`
-shrinking from 623 → 157 as N grows). This is a false-*FAIL* cliff, not
-a false-PASS one: missing tests fail-by-default, so the safety property
-still holds — but past ~100 criteria you need a bigger model (Sonnet,
-Opus), a chunked emit, or a hand-reviewed committed suite. The committed
-suite path (`--suite`, no model) has no such limit and re-runs flat at
-~0.3s regardless of N.
+*Kimi K2* (via LingCode proxy, `kimi-k2.7`)
 
-*Future work*: rerun the 250 / 500 / 1000 sweep on Sonnet 4.6 and Opus 4.7
-to see whether the ceiling moves and by how much. The first attempt got
-subscription-tier rate-limited (Sonnet/Opus share a 5-hour window that
-the Haiku sweep had already depleted); a fresh key or a later window
-should complete it.
+| N criteria | emit time | suite lines | passed / N | coverage | verdict |
+|---:|---:|---:|---:|---:|---|
+| 250  | 79.0s | 23 | 250/250   | 100% | coherent |
+| 500  | 32.4s | 22 | 500/500   | 100% | coherent |
+| 1000 | 65.7s | 18 | 1000/1000 | 100% | coherent |
+
+**What Kimi did differently**: rather than emit 1000 separate test
+functions (which would hit any model's output ceiling), Kimi wrote a
+20-line metaprogrammed loop that dynamically generates one test per
+criterion via `globals()`. Pytest discovers all 1000 tests individually
+and runs them — real coverage, not a shortcut. **Caveat**: this works
+because these criteria share a homogeneous shape (`set_kN(v)` /
+`get_kN() == v`); on heterogeneous specs (OSS-bug, subtle, real-OSS)
+metaprogramming would not apply and per-criterion emit would return.
+
+**Honest limit named**: on Haiku 4.5 the emit stays coherent through ~100
+criteria and collapses past 250 (output-token ceiling — see `suite lines`
+shrinking from 623 → 157 as N grows). This is a false-*FAIL* cliff, not
+a false-PASS one; missing tests fail-by-default, so the safety property
+still holds. Kimi K2 pushes this ceiling out significantly on
+homogeneous specs. The committed suite path (`--suite`, no model) has no
+such limit and re-runs flat at ~0.3s regardless of N.
+
+*Future work*: rerun the 250 / 500 / 1000 sweep on Sonnet 4.6 and Opus
+4.7 (the initial attempt hit subscription-tier rate limits). Also run
+Kimi against the OSS-bug and subtle harnesses to see if its structural
+advantage carries over to heterogeneous criteria.
 
 **Subtle-bug classes** (`verify_subtle.py`) — 6 defect variants each targeting
 one criterion: off-by-one at capacity, silent NaN in aggregation, unicode
