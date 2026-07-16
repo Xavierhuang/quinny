@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 import bench  # noqa: E402
-from quinny.contract import verify  # noqa: E402
+from quinny.contract import verify, run_saved  # noqa: E402
 from quinny._capabilities import make_client, thinking_kwargs  # noqa: E402
 
 TASK = os.environ.get("QUINNY_TASK", "mini_sheet")
@@ -28,7 +28,7 @@ PROMPT = (ROOT / "benchmarks" / "prompts" / f"{TASK}.txt").read_text().strip()
 PLAN = ROOT / "benchmarks" / "plans" / f"{TASK}.good.qn"
 MODEL = os.environ.get("QUINNY_MODEL", "claude-haiku-4-5")
 RUNS = int(os.environ.get("QUINNY_RUNS", "3"))
-MAX_FIX = 3
+MAX_FIX = int(os.environ.get("QUINNY_MAX_FIX", "3"))
 
 
 def _call(user: str) -> str:
@@ -87,15 +87,42 @@ def one_shot():
 
 def loop():
     d = Path(tempfile.mkdtemp(prefix="B_"))
-    files = generate(d)
-    rounds = 0
-    for _ in range(MAX_FIX):
-        res = [r for r in verify(PLAN, d, MODEL) if r.criterion.kind == "test"]
+    # Compile the contract into a suite ONCE and reuse it every round, so the
+    # gate is deterministic and pass-counts are comparable across rounds (a
+    # freshly-generated suite each round would make "did this round improve?"
+    # meaningless). This is the emit→--suite pattern the CLI ships.
+    suite = Path(str(d) + "__contract_suite.py")
+
+    def check(first):
+        res = (verify(PLAN, d, MODEL, emit=suite) if first
+               else run_saved(PLAN, d, suite))
+        res = [r for r in res if r.criterion.kind == "test"]
+        passed = sum(1 for r in res if r.status == "PASS")
         failed = [r.criterion.text for r in res if r.status != "PASS"]
-        if not failed:
-            break
+        return passed, failed
+
+    files = generate(d)
+    passed, failed = check(first=True)
+    # keep-best: never return code worse than the best version we've seen.
+    best_passed, best_files = passed, dict(files)
+    rounds = 0
+    stale = 0  # consecutive rounds without progress
+    while failed and rounds < MAX_FIX:
         rounds += 1
         files = fix(d, files, failed)
+        passed, failed = check(first=False)
+        if passed > best_passed:
+            best_passed, best_files = passed, dict(files)  # progress → adopt
+            stale = 0
+        else:
+            stale += 1
+            # Tolerate ONE plateau round (a slow recovery often needs to
+            # reorient), but stop on sustained no-progress — that's thrashing,
+            # not recovering. keep-best still protects correctness either way.
+            if stale >= 2:
+                break
+    _write(best_files, d)  # grade the best version, never a regressed one
+    suite.unlink(missing_ok=True)
     return bench.grade_holdout(d, TASK), rounds
 
 

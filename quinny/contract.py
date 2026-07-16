@@ -245,9 +245,15 @@ def run_suite(impl_dir: Path, suite_src: str, criteria: list[Criterion],
         suite_path = Path(fh.name)
     try:
         env = {**os.environ, **cfg["env"](impl_dir)}
-        r = subprocess.run(cfg["cmd"](suite_path), cwd=str(impl_dir), env=env,
-                           capture_output=True, text=True, timeout=120)
-        status.update(cfg["parse"](r.stdout + r.stderr))
+        try:
+            r = subprocess.run(cfg["cmd"](suite_path), cwd=str(impl_dir), env=env,
+                               capture_output=True, text=True, timeout=120)
+            status.update(cfg["parse"](r.stdout + r.stderr))
+        except subprocess.TimeoutExpired:
+            # A runaway implementation (e.g. infinite recursion/loop on a cyclic
+            # input) hangs the suite. Treat every criterion as failed rather than
+            # crashing the caller — a suite that can't terminate is not passing.
+            status = {c.index: "FAIL" for c in criteria}
     finally:
         suite_path.unlink(missing_ok=True)
     return [CriterionResult(c, status[c.index]) for c in criteria]

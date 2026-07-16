@@ -1,0 +1,32 @@
+A pure-Python formula spreadsheet engine. Standard library only. The public API MUST live in a file named `fsheet.py` and expose a class `Sheet`.
+
+`Sheet` holds cells addressed like `A1`, `B10`, `AA3` (one-or-more uppercase letters for the column, then a row number). Two methods:
+
+- `set_cell(ref, text)` — store raw cell text (always a string). A cell whose text starts with `=` is a FORMULA; otherwise the text is a numeric literal.
+- `get_value(ref)` — evaluate the cell and return its value (a number, or an error sentinel string; see below).
+
+Evaluation rules:
+- An UNSET or empty cell evaluates to `0`.
+- A numeric literal cell (`"5"`, `"3.5"`) evaluates to that number (`int` when integral, else `float`).
+- A formula (`"=..."`) evaluates the expression after the `=`.
+
+Expression grammar:
+- Numbers, and cell references (`A1`) which evaluate to that cell's value.
+- Binary operators `+ - * /` with the usual precedence (`*` and `/` bind tighter than `+` and `-`), left-associative. Parentheses `( )` override precedence. Unary minus is allowed (`-A1`, `=-3+2`).
+- `/` is true division, so `=7/2` is `3.5`.
+- Range functions over a RECTANGULAR range `TopLeft:BottomRight` (inclusive), where each cell in the rectangle contributes its value (empty cells count as `0`):
+  - `SUM(A1:A3)`, `MIN(A1:B2)`, `MAX(...)`, `AVG(...)`. `AVG` divides the sum by the number of cells in the rectangle.
+
+Error sentinels — `get_value` returns these STRINGS (they are not exceptions):
+- `"#DIV/0!"` — a division by zero occurred. It PROPAGATES: any formula that (transitively) depends on a cell that is `#DIV/0!` is itself `#DIV/0!`.
+- `"#CYCLE!"` — the cell is part of a reference cycle (e.g. `A1` = `=A1+1`, or `A1`→`B1`→`A1`). Every cell on the cycle returns `"#CYCLE!"`. A cell that merely reaches the same ancestor by two different paths (a diamond) is NOT a cycle.
+
+Recalculation is dynamic: after `set_cell` changes a cell, a later `get_value` on any dependent formula must reflect the new value (evaluate on demand — do not cache stale results).
+
+Examples:
+- `set_cell("A1","5"); set_cell("A2","3"); set_cell("A3","=A1+A2")` → `get_value("A3")` is `8`.
+- `set_cell("A1","=2+3*4")` → `14`; `set_cell("A1","=(2+3)*4")` → `20`.
+- `set_cell("A1","=5/0")` → `"#DIV/0!"`; a formula `=A1+1` on top of it is also `"#DIV/0!"`.
+- `set_cell("A1","=A1+1")` → `"#CYCLE!"`.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that builds a small sheet, prints a couple of `get_value` results, and exits 0. `fsheet.py` must expose `Sheet` as specified.

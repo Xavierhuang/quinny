@@ -569,6 +569,7 @@ _ENTRYPOINTS: dict[str, tuple[str, list[str]]] = {
     "money":      ("money.py",      ["allocate"]),
     "globmatch":  ("globmatch.py",  ["matches"]),
     "cidr":       ("cidr.py",       ["Network"]),
+    "fsheet":     ("fsheet.py",     ["Sheet"]),
 }
 
 

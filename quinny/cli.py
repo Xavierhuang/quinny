@@ -200,13 +200,44 @@ def _run_verify_loop(project, result, out_dir, target, model, max_repair, *,
     from quinny.generator import regenerate_file
     from quinny.verifier import verify
 
+    def _restore(snapshot):
+        # Roll the generation back to a previously-seen best version on disk.
+        result.files[:] = snapshot
+        for f in snapshot:
+            (out_dir / f.filename).write_text(f.source + "\n")
+
     context: dict[str, object] = {f.name: f for f in result.files}
+    best_passed = -1
+    best_snapshot: list | None = None
+    stale = 0  # consecutive repair rounds without progress
     for round_ in range(max_repair + 1):
         vr = verify(result, out_dir, full=full)
         _print_verify_summary(vr, round_)
         if vr.all_passed:
             return 0
+        passed = sum(1 for c in vr.checks if c.passed)
+        # keep-best + no-progress guard: track the best version seen. A repair
+        # round that doesn't increase the passing count isn't helping; tolerate
+        # one plateau (a fix sometimes needs a round to reorient) but stop on
+        # sustained no-progress — that's thrashing, and it may have broken
+        # working nodes. On stop, roll back to the best version so we NEVER
+        # leave the user with worse code than an earlier round produced.
+        if passed > best_passed:
+            best_passed, best_snapshot = passed, list(result.files)
+            stale = 0
+        else:
+            stale += 1
+            if stale >= 2:
+                console.print(
+                    f"[yellow]verifier:[/yellow] repair stalled at round {round_} "
+                    f"({passed}/{len(vr.checks)}, best {best_passed}/{len(vr.checks)}); "
+                    f"reverting to the best version and stopping."
+                )
+                _restore(best_snapshot)
+                return 1
         if round_ == max_repair:
+            if best_snapshot is not None:
+                _restore(best_snapshot)  # ensure the best version is on disk
             console.print(
                 f"[red]verifier:[/red] {len(vr.failures)} node(s) still failing "
                 f"after {max_repair} repair round(s)."

@@ -1,0 +1,41 @@
+project FSheet
+
+component Engine
+    goal
+        A formula spreadsheet engine class Sheet in a single module fsheet.py, the public API, with set_cell(ref, text) and get_value(ref).
+    constraint
+        A cell holds raw text. Text starting with "=" is a formula; other text is a numeric literal; an unset or empty cell evaluates to 0. get_value returns a number or an error-sentinel string.
+    constraint
+        Expressions support numbers, cell references, + - * / with * and / binding tighter than + and -, parentheses, and unary minus. / is true division. Range functions SUM/MIN/MAX/AVG take a rectangular range TopLeft:BottomRight where each cell (empty = 0) contributes.
+    constraint
+        get_value returns "#DIV/0!" on division by zero and it propagates to any dependent formula; returns "#CYCLE!" for every cell on a reference cycle; a diamond (same ancestor via two paths) is not a cycle. Evaluation is on demand so changes made by set_cell are reflected by later get_value.
+    test
+        set_cell("A1","5"); set_cell("A2","3"); set_cell("A3","=A1+A2"); get_value("A3") is 8.
+    test
+        set_cell("A1","=2+3*4"); get_value("A1") is 14 and after set_cell("A1","=(2+3)*4") get_value("A1") is 20.
+    test
+        set_cell("A1","2"); set_cell("A2","=A1*10"); get_value("A2") is 20; then set_cell("A1","5") makes get_value("A2") become 50.
+    test
+        set_cell("A1","10"); set_cell("A3","5"); set_cell("B1","=SUM(A1:A3)"); get_value("B1") is 15 (empty A2 counts as 0).
+    test
+        set_cell("A1","=1/0"); get_value("A1") is "#DIV/0!" and set_cell("A2","=A1+1"); get_value("A2") is "#DIV/0!".
+    test
+        set_cell("A1","=A1+1"); get_value("A1") is "#CYCLE!"; set_cell("B1","=C1+1"); set_cell("C1","=B1+1"); get_value("B1") is "#CYCLE!".
+    test
+        set_cell("A1","3"); set_cell("A2","=-A1"); get_value("A2") is -3; set_cell("A3","=-3+2"); get_value("A3") is -1.
+    test
+        set_cell("A1","1"); set_cell("A2","2"); set_cell("B1","3"); set_cell("B2","4"); set_cell("C1","=MIN(A1:B2)"); set_cell("C2","=MAX(A1:B2)"); set_cell("C3","=AVG(A1:B2)"); get_value("C1") is 1 and get_value("C2") is 4 and get_value("C3") is 2.5.
+    test
+        set_cell("A1","1"); set_cell("A2","=A1"); set_cell("A3","=A1"); set_cell("A4","=A2+A3"); get_value("A4") is 2 (a diamond is NOT a cycle).
+    test
+        set_cell("A1","5"); set_cell("A2","=A1+3"); get_value("A2") is 8; then set_cell("A1","10") makes get_value("A2") become 13 (evaluation is on-demand).
+    success
+        Sheet handles literals, operator precedence, parentheses, ranges, division-by-zero propagation, cycle detection, and recalculation on change.
+
+component Demo
+    goal
+        A runnable main.py that builds a small sheet, prints a couple of get_value results, and exits 0.
+    uses
+        Engine
+    depends
+        Engine
