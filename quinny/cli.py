@@ -143,7 +143,7 @@ def cmd_build(path: Path, target: str, out_dir: Path, model: str,
               repair_model: str | None, assemble_model: str | None,
               verify_flag: bool, max_repair: int,
               full_verify: bool, do_assemble: bool,
-              only: str | None) -> int:
+              only: str | None, escalate_model: str | None = None) -> int:
     from quinny.generator import (
         GeneratorError, generate, load_existing_generation, regenerate_node,
     )
@@ -204,7 +204,7 @@ def cmd_build(path: Path, target: str, out_dir: Path, model: str,
     if verify_needed:
         rc = _run_verify_loop(
             project, result, out_dir, target, rm, max_repair,
-            full=full_verify, tracker=tracker,
+            full=full_verify, tracker=tracker, escalate_model=escalate_model,
         )
         if rc != 0:
             _print_usage_report(tracker)
@@ -227,7 +227,7 @@ def _print_usage_report(tracker) -> None:
 
 
 def _run_verify_loop(project, result, out_dir, target, model, max_repair, *,
-                     full: bool, tracker=None) -> int:
+                     full: bool, tracker=None, escalate_model: str | None = None) -> int:
     from quinny.generator import regenerate_file
     from quinny.verifier import verify
 
@@ -241,6 +241,8 @@ def _run_verify_loop(project, result, out_dir, target, model, max_repair, *,
     best_passed = -1
     best_snapshot: list | None = None
     stale = 0  # consecutive repair rounds without progress
+    active_model = model    # bumps to escalate_model once the weak model stalls
+    escalated = False
     for round_ in range(max_repair + 1):
         vr = verify(result, out_dir, full=full)
         _print_verify_summary(vr, round_)
@@ -259,13 +261,27 @@ def _run_verify_loop(project, result, out_dir, target, model, max_repair, *,
         else:
             stale += 1
             if stale >= 2:
-                console.print(
-                    f"[yellow]verifier:[/yellow] repair stalled at round {round_} "
-                    f"({passed}/{len(vr.checks)}, best {best_passed}/{len(vr.checks)}); "
-                    f"reverting to the best version and stopping."
-                )
-                _restore(best_snapshot)
-                return 1
+                # Stalled. If an escalation model is set, hand the repair to the
+                # stronger model ONCE before giving up — the weak model can't fix
+                # what it can't fix, but a stronger one often can. This is the
+                # "always reaches the bar" path, at higher cost.
+                if escalate_model and not escalated:
+                    console.print(
+                        f"[yellow]verifier:[/yellow] repair stalled at round {round_} "
+                        f"({passed}/{len(vr.checks)}) — escalating repair to "
+                        f"[bold]{escalate_model}[/bold]."
+                    )
+                    active_model = escalate_model
+                    escalated = True
+                    stale = 0
+                else:
+                    console.print(
+                        f"[yellow]verifier:[/yellow] repair stalled at round {round_} "
+                        f"({passed}/{len(vr.checks)}, best {best_passed}/{len(vr.checks)}); "
+                        f"reverting to the best version and stopping."
+                    )
+                    _restore(best_snapshot)
+                    return 1
         if round_ == max_repair:
             if best_snapshot is not None:
                 _restore(best_snapshot)  # ensure the best version is on disk
@@ -289,7 +305,7 @@ def _run_verify_loop(project, result, out_dir, target, model, max_repair, *,
             )
             fixed = regenerate_file(
                 project, gf.name, gf, failure.log,
-                generated_context=context, target=target, model=model,
+                generated_context=context, target=target, model=active_model,
                 tracker=tracker,
             )
             # Update in-place: both result.files and context.
@@ -507,6 +523,10 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--node-model", default=None,
                        help="Override model for per-node code generation "
                             "(usually a cheaper model — small scoped tasks).")
+    build.add_argument("--escalate-model", default=None,
+                       help="If the repair loop stalls, hand the fix to this "
+                            "stronger model once before giving up (the "
+                            "'always reaches the bar' path, at higher cost).")
     build.add_argument("--repair-model", default=None,
                        help="Override model for the verify-repair loop.")
     build.add_argument("--assemble-model", default=None,
@@ -545,7 +565,8 @@ def main(argv: list[str] | None = None) -> int:
                              args.types_model, args.node_model,
                              args.repair_model, args.assemble_model,
                              args.verify, args.max_repair,
-                             args.full_verify, args.assemble, args.only)
+                             args.full_verify, args.assemble, args.only,
+                             args.escalate_model)
         handlers = {
             "parse": cmd_parse,
             "check": cmd_check,
