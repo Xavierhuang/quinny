@@ -1,0 +1,18 @@
+project RateLimit
+
+# Real-world bug pattern: off-by-one in a rate limiter — allows N+1 requests
+# per window instead of N. Shows up in every "rolling window counter"
+# implementation ever committed by someone tired at 2am. Contract: exactly
+# N in a window, no more.
+
+task Limiter
+    goal
+        Fixed-window rate limiter — allow N requests per WINDOW seconds.
+    test
+        With limit=3, window=60: allow(0), allow(1), allow(2) return True; allow(3) returns False.
+    test
+        With limit=3, window=60: after allow x3 rejects, waiting 60s allows again.
+    test
+        With limit=0: first call returns False immediately.
+    test
+        Limits are per-key: allow("a") x3, allow("b") once → all True.

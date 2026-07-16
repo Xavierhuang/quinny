@@ -1,0 +1,18 @@
+project DiscountStacking
+
+# Real-world bug pattern: coupon-stacking exploits — the checkout accepts
+# multiple discount codes and multiplies them, so 5% × 10% × 20% ends up
+# as a 65% discount instead of the highest single one (see: Shopify bug
+# bounty reports 2020–2022). Contract: only one active code, "best wins."
+
+task Discount
+    goal
+        Apply exactly one discount code to a total, whichever is best.
+    test
+        apply_codes(100.0, []) returns 100.0.
+    test
+        apply_codes(100.0, ["SAVE10"]) returns 90.0.
+    test
+        apply_codes(100.0, ["SAVE10", "SAVE20"]) returns 80.0 (best wins, not stacked).
+    test
+        apply_codes(100.0, ["FAKE"]) raises ValueError.

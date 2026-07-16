@@ -1,0 +1,21 @@
+project ZipSlip
+
+# Real-world bug pattern: unzip that writes files by joining the archive's
+# claimed member path with the destination — a member named "../../etc/foo"
+# escapes the sandbox. The original "Zip Slip" CVE (Snyk 2018) hit hundreds
+# of libraries. Contract: reject any member that escapes `dest`.
+
+task SafeExtract
+    goal
+        Extract entries from a manifest into `dest_dir`, refusing traversal.
+    input
+        entries
+        dest_dir
+    test
+        safe_extract([("hello.txt", "hi")], "/tmp/out") writes /tmp/out/hello.txt.
+    test
+        safe_extract([("../evil.txt", "x")], "/tmp/out") raises ValueError.
+    test
+        safe_extract([("a/../../evil.txt", "x")], "/tmp/out") raises ValueError.
+    test
+        safe_extract([("/etc/passwd", "x")], "/tmp/out") raises ValueError.

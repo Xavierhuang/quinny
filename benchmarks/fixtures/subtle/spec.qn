@@ -1,0 +1,34 @@
+project SubtleKV
+
+# Subtle-defect benchmark: every criterion below targets a bug class that
+# a human reviewer typically MISSES on first pass — the "looks fine, ships
+# broken" family. Compare to verify_usability.py which covers gross feature
+# omissions (LRU off, TTL off, etc.).
+
+component Store
+    goal
+        A small KV with LRU eviction and TTL, safe against subtle boundary bugs.
+
+task API
+    goal
+        Round-trip API around Store with tricky edge cases.
+    depends
+        Store
+    # Off-by-one: capacity=3 means AT MOST 3 live keys, never 4.
+    test
+        With capacity=3: set a=1, b=2, c=3, d=4 — exists(a) is False, len is 3.
+    # Silent NaN: sum of values containing NaN should never appear as a valid total.
+    test
+        sum_values() over {"a": 1.0, "b": float("nan"), "c": 2.0} returns NaN, not 3.0.
+    # Unicode normalization: "café" NFC vs NFD are the same key visually.
+    test
+        set("café", 1); get("café") returns 1 (NFC/NFD normalize equal).
+    # Wrong exception type: missing key must raise KeyError specifically, not Exception.
+    test
+        get("nonexistent") raises KeyError, not a bare Exception.
+    # Integer overflow simulation: ttl=10**18 must not overflow into a negative deadline.
+    test
+        set("k", 1, ttl=10**18) then exists("k") is True (no overflow to expired).
+    # Boundary: set(k, v, ttl=0) is immediately expired (not "0 means no ttl").
+    test
+        set("k", 1, ttl=0) then exists("k") is False (ttl=0 means expired now).

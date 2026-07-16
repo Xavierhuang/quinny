@@ -116,10 +116,11 @@ so CI runs it deterministically, with no model in the loop — see
 
 ### How reliable is the gate?
 
-**In plain terms: across ~40 implementations — some correct, some deliberately
-broken — verify flagged every broken one and never once passed a bad one.** The
-single time it disagreed with a human-written test suite, it was being *stricter*,
-not letting a bug through. The measured detail, both benchmarks in [`benchmarks/`](benchmarks/):
+**In plain terms: across ~85 implementations — some correct, some deliberately
+broken, some shaped like real CVEs — verify flagged every broken one and never
+once passed a bad one.** The few times it disagreed with a human-written suite,
+it was being *stricter*, not letting a bug through. The measured detail, five
+benchmarks in [`benchmarks/`](benchmarks/):
 
 **Synthetic** — implementations with known, exact defects (`verify_usability.py`):
 
@@ -141,14 +142,53 @@ structure, a formula engine, a 9-module interpreter), verify's gate vs an
 | Mean gate score on **broken** impls | **0%** |
 | False-PASS (green-lit broken code) | **0 / 13** |
 
-Across both, verify has **never once passed a broken implementation.** The only
-disagreements were verify being *stricter* than the reference — the safe
-direction for a gate.
-
 **Determinism** (`verify_determinism.py`) — emit a suite once, then re-run it via
 `--suite`: **60 re-runs, zero verdict drift** (correct impl 6/6 every run, broken
 0/6 every run). A committed suite is a plain pytest file — no model, no flakiness,
 safe to gate CI on.
+
+**OSS-bug shapes** (`verify_oss_bugs.py`) — 5 fixtures modeled on real-world
+CVE-shaped patterns (negative-quantity checkout, coupon stacking, zip-slip
+path traversal, session-token expiry ignored, rate-limit off-by-one):
+
+| Metric | Result |
+|---|---|
+| False-PASS (green-lit a buggy impl) | **0 / 5** |
+| Defect criteria caught across buggy impls | **12 / 20** |
+| False-FAIL on correct impls | 2 / 20 criteria (cried wolf, safe direction) |
+
+**Scale** (`verify_scale.py`) — sweep from 10 → 100 acceptance criteria per
+spec. Confirms the flow doesn't fall apart at scale:
+
+| N criteria | emit time | run time (committed suite) | coverage |
+|---:|---:|---:|---:|
+| 10  |  6.5s | 0.27s | 100% |
+| 25  | 12.7s | 0.25s | 100% |
+| 50  | 24.3s | 0.29s | 100% |
+| 100 | 46.4s | 0.31s | 100% |
+
+Emit is linear (~0.47s per criterion); the committed suite re-runs flat at
+~0.28s regardless of N — no model, no drift.
+
+**Subtle-bug classes** (`verify_subtle.py`) — 6 defect variants each targeting
+one criterion: off-by-one at capacity, silent NaN in aggregation, unicode
+NFC/NFD confusion, wrong exception type, TTL integer overflow, TTL=0 semantics.
+The kind of bug humans reliably miss in review:
+
+| Metric | Result |
+|---|---|
+| False-PASS (missed a subtle defect) | **0 / 6** |
+| Surgical FAIL (exact criterion the defect targets) | 6 / 6 |
+| False-FAIL on correct impl | 0 |
+
+After one emit, the committed suite (`benchmarks/fixtures/subtle/suite.py`)
+runs offline forever — the pattern you'd use in CI.
+
+**Across all five benchmarks: 0 false-PASS on 85 implementations** spanning
+synthetic defects, real model-generated code, CVE-shaped bug patterns, and
+subtle-defect classes. The handful of disagreements are verify being *stricter*
+than the reference — the safe direction for a gate. That reliability is what
+makes the write→verify→fix loop below actually work.
 
 **Cross-language** (*experimental*) — the `.qn` contract is language-agnostic; only
 the emitted suite differs. `--lang python` → pytest, `--lang js` → Node's `node:test`,

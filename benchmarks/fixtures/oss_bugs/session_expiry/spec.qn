@@ -1,0 +1,22 @@
+project SessionExpiry
+
+# Real-world bug pattern: session-token check that returns True on
+# any non-empty token, ignoring the stored expiry timestamp. Common in
+# hand-rolled auth (see: 2018 JWT-library CVEs, "none" alg family).
+# Contract: expired = rejected, unknown = rejected.
+
+task Session
+    goal
+        Validate a session token against store + expiry.
+    input
+        token
+    output
+        is_valid
+    test
+        issue("alice") returns a token; validate(token, now=0) returns True.
+    test
+        validate("nonexistent-token", now=0) returns False.
+    test
+        validate(token, now=999_999_999) returns False after the 1-hour TTL.
+    test
+        validate("", now=0) returns False.

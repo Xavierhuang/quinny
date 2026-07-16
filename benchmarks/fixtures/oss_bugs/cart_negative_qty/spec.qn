@@ -1,0 +1,18 @@
+project CartNegativeQty
+
+# Real-world bug pattern: e-commerce carts that accept a negative-quantity
+# line item let the attacker turn a $10 refund into a $-10 charge, applied
+# to their gift-card balance (see: multiple 2019–2023 Shopify / Magento
+# CVEs). Contract: reject negative quantities loudly.
+
+task Cart
+    goal
+        Add items to a cart and compute the total.
+    test
+        add_item("apple", 3, 1.50) returns None; cart_total() returns 4.50.
+    test
+        add_item("book", -1, 20.00) raises ValueError.
+    test
+        add_item("bad", 0, 5.00) raises ValueError.
+    test
+        cart_total() on an empty cart returns 0.
