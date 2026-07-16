@@ -282,7 +282,7 @@ reproduce steps in [`benchmarks/VERIFY_LOOP_RESULTS.md`](benchmarks/VERIFY_LOOP_
 | Model | one-shot (no Quinny) | verify-loop (Quinny) |
 |---|---|---|
 | **Haiku** | 50% — swings 11/0/9 across runs | **100%** |
-| **Kimi (k2.7)** | 50% — swings 14/0 across runs | **100%** |
+| **Kimi (k2.7)** | 67% — swings 14/0/14 across runs | **100%** |
 
 **~1.4–2.4× the tokens and time → correctness 50% → 100%, for both models.**
 
