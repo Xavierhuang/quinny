@@ -70,9 +70,23 @@ def generate(d):
 def fix(d, files, failed):
     src = "\n\n".join(f"```python\n# {fn}\n{s}\n```" for fn, s in files.items())
     fb = "\n".join(f"- {t}" for t in failed)
+    # Ship the smallest diff that addresses the flagged failures. The
+    # earlier prompt ("Fix it. Re-emit the ENTIRE project.") licensed
+    # total rewrites — and on tasks where the one-shot was mostly-right
+    # (e.g. fsheet at 94% one-shot correctness), the rewrite regressed
+    # unrelated behaviors that the contract didn't explicitly test.
+    # This prompt narrows the surface: minimal patch, preserve working
+    # behavior, no broad-except panic patterns.
     nf = bench._parse_raw_files(_call(
-        f"Requirement:\n{PROMPT}\n\nYour code FAILS these acceptance criteria:\n"
-        f"{fb}\n\nCurrent code:\n{src}\n\nFix it. Re-emit the ENTIRE project. {_EMIT}"))
+        f"Requirement:\n{PROMPT}\n\n"
+        f"Your code FAILS these acceptance criteria:\n{fb}\n\n"
+        f"Current code:\n{src}\n\n"
+        f"Make the SMALLEST possible change that addresses ONLY the failures "
+        f"above. Do NOT rewrite unrelated functions. Do NOT introduce broad "
+        f"exception handlers (never `except Exception: return SENTINEL` — that "
+        f"masks bugs as sentinel values). Every behavior that currently works "
+        f"must keep working. Re-emit the ENTIRE project so it can be re-run, "
+        f"but the diff vs current code should be as small as possible. {_EMIT}"))
     if nf:
         files = nf
         _write(files, d)
