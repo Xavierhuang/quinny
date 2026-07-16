@@ -234,6 +234,13 @@ collateral. This is the answer to *"of course the gate catches bugs you
 wrote"* — the library, the wrapper wiring, and the test scaffolding all
 work end-to-end on code we did not author.
 
+**Add your own library.** The harness auto-discovers every subdirectory
+under `benchmarks/fixtures/real_oss/` with a `manifest.py` — five files
+and no code changes to add a new one. Full recipe in
+[`benchmarks/fixtures/real_oss/README.md`](benchmarks/fixtures/real_oss/README.md).
+Every library that lands there is one more independent data point for
+the gate's honesty on code the Quinny author didn't touch.
+
 **Across all six benchmarks: 0 false-PASS on ~90 implementations** spanning
 synthetic defects, real model-generated code, CVE-shaped bug patterns,
 subtle-defect classes, and a real published library. The handful of
