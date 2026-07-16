@@ -461,7 +461,7 @@ def main(argv: list[str] | None = None) -> int:
     scaf.add_argument("idea", help="Plain-English description of what to build.")
     scaf.add_argument("-o", "--out-dir", type=Path, default=Path("."),
                       help="Where to write the contract + stub (default: .).")
-    scaf.add_argument("--lang", choices=["python", "js", "swift"], default="python")
+    scaf.add_argument("--lang", choices=["python", "js", "ts", "swift"], default="python")
     scaf.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"))
 
     ver = sub.add_parser("verify",
@@ -471,7 +471,7 @@ def main(argv: list[str] | None = None) -> int:
     ver.add_argument("impl", type=Path, help="Directory of code to verify.")
     ver.add_argument("--model", default=os.environ.get("QUINNY_MODEL", "claude-haiku-4-5"),
                      help="Model used to compile criteria into tests.")
-    ver.add_argument("--lang", choices=["python", "js", "swift"], default="python",
+    ver.add_argument("--lang", choices=["python", "js", "ts", "swift"], default="python",
                      help="Target language of the implementation (python=pytest, "
                           "js=Node's test runner, swift=swiftc compile+run).")
     ver.add_argument("--emit", type=Path, default=None,

@@ -87,6 +87,32 @@ def _surface_js(impl_dir: Path) -> str:
     return "\n".join(parts) or "(no modules found)"
 
 
+def _surface_ts(impl_dir: Path) -> str:
+    parts = []
+    for ts in sorted(impl_dir.glob("*.ts")):
+        if (ts.name.endswith(".test.ts") or ts.name.endswith(".spec.ts")
+                or ts.name == "main.ts"):
+            continue
+        text = ts.read_text()
+        names: set[str] = set()
+        # export function/class/const/let/var/interface/type/enum
+        names |= set(re.findall(
+            r"\bexport\s+(?:default\s+)?"
+            r"(?:async\s+)?(?:function|class|const|let|var|interface|type|enum)"
+            r"\s+([A-Za-z_$][\w$]*)", text))
+        # export { foo, bar as baz }
+        for block in re.findall(r"\bexport\s*\{([^}]*)\}", text):
+            for tok in block.split(","):
+                m = re.match(r"\s*([A-Za-z_$][\w$]*)", tok)
+                if m:
+                    names.add(m.group(1))
+        # CommonJS style still works in TS
+        names |= set(re.findall(r"exports\.([A-Za-z_$][\w$]*)", text))
+        if names:
+            parts.append(f"- {ts.name}: exports {', '.join(sorted(names))}")
+    return "\n".join(parts) or "(no TypeScript modules found)"
+
+
 def _surface_swift(impl_dir: Path) -> str:
     parts = []
     for sw in sorted(impl_dir.glob("*.swift")):
@@ -168,6 +194,24 @@ c01, c02, ... matching the numbers.
 - Only Node built-ins. Do not test anything outside the criteria."""
 
 
+_SYSTEM_TS = """You write a TypeScript acceptance suite (using the built-in \
+`node:test` and `node:assert`, no npm packages) that checks whether an \
+implementation satisfies a specification. Output ONLY one TypeScript file — no \
+prose, no markdown fences.
+
+Rules:
+- `import` the public API from the implementation's ACTUAL modules (listed \
+below). Use `import { X } from './module.ts'` — include the `.ts` extension \
+because we run under `node --experimental-strip-types`.
+- Write EXACTLY one `test('c01', () => { ... })` per numbered criterion, named \
+c01, c02, ... matching the numbers.
+- Each test asserts the described behavior with `node:assert`; use \
+`assert.throws` for error criteria.
+- Only Node built-ins. Do not test anything outside the criteria.
+- Prefer plain values over TypeScript type gymnastics in the tests — types are \
+stripped at runtime; assertions run on values."""
+
+
 _SYSTEM_SWIFT = """You write a Swift acceptance suite that checks whether an \
 implementation satisfies a specification. Output ONLY Swift top-level code (it \
 becomes main.swift) — no prose, no markdown fences.
@@ -197,6 +241,18 @@ LANGS = {
         "system": _SYSTEM_JS, "surface": _surface_js, "parse": _parse_tap,
         "suffix": ".quinny.contract.test.js",
         "cmd": lambda p: ["node", "--test", "--test-reporter=tap", str(p)],
+        "env": lambda impl: {},
+    },
+    "ts": {
+        # Runs under `node --experimental-strip-types` (stable behind flag from
+        # Node 22.6; default from Node 23.6). Types are stripped at run time —
+        # no tsc, no npm install, no ts-node. Matches JS's "no npm packages"
+        # posture. If the user's Node is < 22.6, they'll see a flag-unknown
+        # error; recommend upgrading rather than shipping a tsx dep.
+        "system": _SYSTEM_TS, "surface": _surface_ts, "parse": _parse_tap,
+        "suffix": ".quinny.contract.test.ts",
+        "cmd": lambda p: ["node", "--experimental-strip-types",
+                          "--test", "--test-reporter=tap", str(p)],
         "env": lambda impl: {},
     },
     "swift": {
