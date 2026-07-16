@@ -37,7 +37,11 @@ sys.path.insert(0, str(ROOT))
 from quinny.contract import run_saved, verify  # noqa: E402
 
 MODEL = os.environ.get("QUINNY_MODEL", "claude-haiku-4-5")
-DEFAULT_SCALES = (10, 25, 50, 100)
+# Sweep spans two regimes: the coherent zone (10-100, already known to hold)
+# and the stress zone (250-1000, where we expect emit to start dropping
+# criteria or blowing past output-token limits — the point of this benchmark
+# is to find *where* that happens.)
+DEFAULT_SCALES = (10, 25, 50, 100, 250, 500, 1000)
 
 
 def _scales() -> list[int]:
@@ -111,9 +115,9 @@ def main() -> int:
         return _dry_run()
 
     scales = _scales()
-    print(f"{'N':>5} {'emit_s':>8} {'suite_lines':>12} "
-          f"{'run_s':>8} {'pass/total':>12} {'coverage':>9}")
-    print("-" * 62)
+    print(f"{'N':>5} {'emit_s':>8} {'lines':>7} "
+          f"{'run_s':>8} {'pass/total':>12} {'coverage':>9} {'dropped':>8} status")
+    print("-" * 78)
 
     for n in scales:
         d = Path(tempfile.mkdtemp(prefix=f"scale_{n}_"))
@@ -122,25 +126,39 @@ def main() -> int:
         (d / f"scale_kv_{n}.py").write_text(build_correct_impl(n))
 
         emit_path = d / "suite.py"
+        status = "ok"
+        emit_dt = run_dt = 0.0
+        suite_lines = passed = total = 0
+
         t0 = time.time()
-        emit_results = verify(spec_path, d, MODEL, emit=emit_path)
+        try:
+            verify(spec_path, d, MODEL, emit=emit_path)
+        except Exception as e:
+            status = f"emit-fail: {type(e).__name__}: {str(e)[:60]}"
         emit_dt = time.time() - t0
-        suite_lines = len(emit_path.read_text().splitlines()) if emit_path.exists() else 0
 
-        # Re-run the committed suite — this is the model-free path CI uses.
-        t0 = time.time()
-        run_results = run_saved(spec_path, d, emit_path)
-        run_dt = time.time() - t0
-        passed, total = _score(run_results)
+        if emit_path.exists():
+            suite_lines = len(emit_path.read_text().splitlines())
+            t0 = time.time()
+            try:
+                run_results = run_saved(spec_path, d, emit_path)
+                passed, total = _score(run_results)
+            except Exception as e:
+                status = f"run-fail: {type(e).__name__}: {str(e)[:60]}"
+            run_dt = time.time() - t0
+
         coverage = f"{100 * total // n}%" if n else "-"
+        dropped = max(0, n - total)  # criteria the emit silently omitted
 
-        print(f"{n:>5} {emit_dt:>8.1f} {suite_lines:>12} "
-              f"{run_dt:>8.2f} {passed}/{total:<11} {coverage:>9}")
+        print(f"{n:>5} {emit_dt:>8.1f} {suite_lines:>7} "
+              f"{run_dt:>8.2f} {passed}/{total:<11} {coverage:>9} {dropped:>8} {status}")
 
         shutil.rmtree(d, ignore_errors=True)
 
-    print("-" * 62)
+    print("-" * 78)
     print(f"Model: {MODEL}   (set QUINNY_SCALES=10,25 to restrict)")
+    print("Legend: dropped = criteria the emit silently omitted "
+          "(gate stays honest only when this is 0).")
     return 0
 
 

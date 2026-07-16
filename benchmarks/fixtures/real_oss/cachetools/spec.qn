@@ -1,0 +1,49 @@
+project CachetoolsContract
+
+component LRU
+    goal
+        Documented behavior of cachetools.LRUCache exposed via a thin
+        wrapper module. Uses the pip-installed library as-is — we do
+        not reimplement the cache.
+
+task LRUBehavior
+    goal
+        Round-trip, capacity, missing-key, and LRU-order guarantees on
+        the LRUCache wrapper.
+    depends
+        LRU
+    # C1: round-trip
+    test
+        With c=make_lru(4): put(c,"a",1); get(c,"a") returns 1.
+    # C2: capacity is respected
+    test
+        With c=make_lru(2): put(c,"a",1); put(c,"b",2); put(c,"c",3); size(c) equals 2.
+    # C3: read updates recency — "a" survives, "b" gets evicted
+    test
+        With c=make_lru(2): put(c,"a",1); put(c,"b",2); get(c,"a"); put(c,"c",3); has(c,"a") is True and has(c,"b") is False.
+    # C4: missing key raises KeyError
+    test
+        With c=make_lru(4): get(c,"missing") raises KeyError.
+    # C5: overwrite does not grow the cache
+    test
+        With c=make_lru(4): put(c,"a",1); put(c,"a",2); size(c) equals 1.
+
+component TTL
+    goal
+        Documented behavior of cachetools.TTLCache. The wrapper injects a
+        controllable timer so tests are deterministic.
+
+task TTLBehavior
+    goal
+        Values are visible before ttl and gone after ttl.
+    depends
+        TTL
+    # C6: fresh entry is visible
+    test
+        With c=make_ttl(4, 10, fake_timer(start=0, step=0)): put(c,"a",1); get(c,"a") returns 1.
+    # C7: after ttl the entry has expired
+    test
+        With c=make_ttl(4, 10, fake_timer(start=0, step=100)): put(c,"a",1); get(c,"a") raises KeyError.
+    # C8: before ttl the entry is still fresh
+    test
+        With c=make_ttl(4, 10, fake_timer(start=0, step=5)): put(c,"a",1); get(c,"a") returns 1.
