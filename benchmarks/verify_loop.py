@@ -11,6 +11,7 @@ model, and NOT the verify contract) — so an improvement means genuinely more
 spec-conforming code, not teaching-to-its-own-test. If B > A, embedding Quinny
 measurably improves correctness.
 """
+import ast
 import os
 import sys
 import tempfile
@@ -67,6 +68,61 @@ def generate(d):
     return files
 
 
+def _panic_pattern(files):
+    """Return a description of a bug-masking antipattern, or None if clean.
+
+    The specific pattern we caught Haiku adding on fsheet under fix-round
+    pressure: a `try` block with BOTH a narrow handler (e.g.
+    `except ZeroDivisionError: return "#DIV/0!"`) AND a broad
+    `except Exception: return "#DIV/0!"` returning the SAME sentinel.
+    That makes every non-DIV bug (parser NameError, missing cell, etc.)
+    silently look like a legitimate divide-by-zero — 7 held-out tests
+    regressed on fsheet from exactly this shape.
+
+    We do NOT flag broad excepts that return a DIFFERENT sentinel than
+    any narrower handler in the same try (e.g. `#VALUE!` when the narrow
+    branch returns `#DIV/0!` is arguably reasonable and doesn't hide
+    bugs as fake DIV/0s).
+    """
+    def _sentinel_return(handler):
+        # Walk the handler body for any Return of a sentinel string.
+        for stmt in handler.body:
+            if isinstance(stmt, ast.Return) and stmt.value is not None:
+                v = stmt.value
+                if (isinstance(v, ast.Constant)
+                        and isinstance(v.value, str)
+                        and v.value.startswith("#")):
+                    return v.value
+        return None
+
+    def _is_broad(handler):
+        return (handler.type is None
+                or (isinstance(handler.type, ast.Name)
+                    and handler.type.id in ("Exception", "BaseException")))
+
+    for fn, src in files.items():
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Try):
+                continue
+            broad_sentinels = {_sentinel_return(h): h
+                               for h in node.handlers if _is_broad(h)}
+            narrow_sentinels = {_sentinel_return(h)
+                                for h in node.handlers if not _is_broad(h)}
+            broad_sentinels.pop(None, None)   # ignore broad excepts without sentinel
+            narrow_sentinels.discard(None)
+            overlap = set(broad_sentinels) & narrow_sentinels
+            if overlap:
+                sent = next(iter(overlap))
+                return (f"{fn}: broad `except Exception` returns {sent!r} — "
+                        f"same sentinel as a narrower handler in the same try. "
+                        f"Real bugs will be silently masked as {sent!r}.")
+    return None
+
+
 def fix(d, files, failed):
     src = "\n\n".join(f"```python\n# {fn}\n{s}\n```" for fn, s in files.items())
     fb = "\n".join(f"- {t}" for t in failed)
@@ -88,6 +144,14 @@ def fix(d, files, failed):
         f"must keep working. Re-emit the ENTIRE project so it can be re-run, "
         f"but the diff vs current code should be as small as possible. {_EMIT}"))
     if nf:
+        panic = _panic_pattern(nf)
+        if panic:
+            # Reject the fix round entirely — the model introduced a bug-
+            # masking pattern that would silently regress behaviors the
+            # contract doesn't cover. Keep the previous code; the outer
+            # loop's keep-best guard will retry or stall out on plateau.
+            print(f"  [reject] panic pattern in fix: {panic}", flush=True)
+            return files
         files = nf
         _write(files, d)
     return files
