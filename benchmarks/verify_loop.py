@@ -182,44 +182,74 @@ def _panic_pattern(files):
     return None
 
 
+def _fix_prompt_sentinels_clause() -> str:
+    """Build an explicit "allowed sentinels" clause so Haiku doesn't have
+    to guess and invent new ones on the fly. Returns "" if the task has
+    no sentinels at all."""
+    allowed = sorted(_spec_sentinels())
+    if not allowed:
+        return ""
+    tokens = ", ".join(repr(s) for s in allowed)
+    return (
+        f"When you need to signal an error condition, use ONE of these "
+        f"exact strings: {tokens}. Do NOT invent new tokens. If none of "
+        f"these fits, ask yourself whether an existing sentinel should "
+        f"propagate through your code path (e.g. arithmetic on a cell "
+        f"that returned a sentinel returns the SAME sentinel — errors "
+        f"flow through operators, they don't become new errors).\n\n"
+    )
+
+
 def fix(d, files, failed):
     src = "\n\n".join(f"```python\n# {fn}\n{s}\n```" for fn, s in files.items())
     fb = "\n".join(f"- {t}" for t in failed)
+    sentinels_clause = _fix_prompt_sentinels_clause()
     # Ship the smallest diff that addresses the flagged failures. The
     # earlier prompt ("Fix it. Re-emit the ENTIRE project.") licensed
     # total rewrites — and on tasks where the one-shot was mostly-right
     # (e.g. fsheet at 94% one-shot correctness), the rewrite regressed
     # unrelated behaviors that the contract didn't explicitly test.
     # This prompt narrows the surface: minimal patch, preserve working
-    # behavior, no broad-except panic patterns.
+    # behavior, no broad-except panic patterns, and gives Haiku the
+    # exact set of allowed sentinels so it doesn't invent new ones.
     nf = bench._parse_raw_files(_call(
         f"Requirement:\n{PROMPT}\n\n"
         f"Your code FAILS these acceptance criteria:\n{fb}\n\n"
         f"Current code:\n{src}\n\n"
+        f"{sentinels_clause}"
         f"Make the SMALLEST possible change that addresses ONLY the failures "
         f"above. Do NOT rewrite unrelated functions. Do NOT introduce broad "
         f"exception handlers (never `except Exception: return SENTINEL` — that "
-        f"masks bugs as sentinel values). Do NOT invent new error sentinel "
-        f"strings that don't appear in the spec — return only the exact "
-        f"sentinels the spec names, or a real value. Every behavior that "
-        f"currently works must keep working. Re-emit the ENTIRE project so "
-        f"it can be re-run, but the diff vs current code should be as small "
-        f"as possible. {_EMIT}"))
-    if nf:
+        f"masks bugs as sentinel values). Every behavior that currently works "
+        f"must keep working. Re-emit the ENTIRE project so it can be re-run, "
+        f"but the diff vs current code should be as small as possible. {_EMIT}"))
+    # Lint the model's response; if it violated a rule, RETRY ONCE with
+    # explicit feedback about the rejection instead of silently discarding
+    # (which stalled the loop on tasks where the model kept trying the
+    # same invalid sentinel).
+    for attempt in ("first", "retry"):
+        if not nf:
+            return files
         panic = _panic_pattern(nf)
-        if panic:
-            # Reject the fix round entirely — the model introduced a bug-
-            # masking pattern that would silently regress behaviors the
-            # contract doesn't cover. Keep the previous code; the outer
-            # loop's keep-best guard will retry or stall out on plateau.
-            print(f"  [reject] panic pattern in fix: {panic}", flush=True)
-            return files
         invented = _invented_sentinel(nf)
-        if invented:
-            print(f"  [reject] invented sentinel in fix: {invented}", flush=True)
+        if not (panic or invented):
+            files = nf
+            _write(files, d)
             return files
-        files = nf
-        _write(files, d)
+        reason = panic or invented
+        print(f"  [reject/{attempt}] {reason}", flush=True)
+        if attempt == "retry":
+            # Give up gracefully — keep previous round's code.
+            return files
+        # Retry the fix with a spelled-out correction.
+        nf = bench._parse_raw_files(_call(
+            f"Your previous fix was REJECTED by the loop's lint:\n{reason}\n\n"
+            f"Requirement:\n{PROMPT}\n\n"
+            f"Failing criteria:\n{fb}\n\n"
+            f"Current code:\n{src}\n\n"
+            f"{sentinels_clause}"
+            f"Try again. Address the rejection reason above. Do not repeat "
+            f"the mistake. Same minimal-diff rules apply. {_EMIT}"))
     return files
 
 
