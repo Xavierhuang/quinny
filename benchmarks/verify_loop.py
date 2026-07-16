@@ -13,6 +13,7 @@ measurably improves correctness.
 """
 import ast
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -66,6 +67,54 @@ def generate(d):
     files = bench._parse_raw_files(_call(f"Requirement:\n{PROMPT}\n\n{_EMIT}"))
     _write(files, d)
     return files
+
+
+_SPEC_SENTINELS_CACHE: set[str] | None = None
+
+
+def _spec_sentinels() -> set[str]:
+    """Extract every #SENTINEL string that appears in the spec text.
+
+    These are the ONLY error tokens the model is allowed to return. If a
+    fix round emits code returning a `#SOMETHING!` string that never
+    appears in the spec, the model is inventing an "expected error" to
+    make a failing case look intentional — real bug hidden as fake
+    sentinel. Caught fsheet Haiku returning `#PARSE!` for `=A1+A2` (which
+    should evaluate to a number).
+    """
+    global _SPEC_SENTINELS_CACHE
+    if _SPEC_SENTINELS_CACHE is None:
+        text = PLAN.read_text()
+        _SPEC_SENTINELS_CACHE = set(re.findall(r'"(#[A-Z][A-Z0-9!/]*)"', text))
+        _SPEC_SENTINELS_CACHE |= set(re.findall(r"'(#[A-Z][A-Z0-9!/]*)'", text))
+    return _SPEC_SENTINELS_CACHE
+
+
+def _invented_sentinel(files) -> str | None:
+    """Return a description of an invented sentinel, or None if clean.
+
+    Walks every string constant in the emitted files, keeps the ones
+    that look like sheet-style error sentinels (`#UPPER!`), and flags
+    any that are NOT declared in the spec. See _spec_sentinels above."""
+    allowed = _spec_sentinels()
+    if not allowed:
+        return None  # spec doesn't use sentinels at all → nothing to check
+    for fn, src in files.items():
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Constant):
+                continue
+            v = node.value
+            if not (isinstance(v, str) and re.fullmatch(r"#[A-Z][A-Z0-9!/]*", v)):
+                continue
+            if v not in allowed:
+                return (f"{fn}: invented sentinel {v!r} — not in spec "
+                        f"(allowed: {sorted(allowed)}). Model is masking a "
+                        f"real bug as a fake expected error.")
+    return None
 
 
 def _panic_pattern(files):
@@ -140,9 +189,12 @@ def fix(d, files, failed):
         f"Make the SMALLEST possible change that addresses ONLY the failures "
         f"above. Do NOT rewrite unrelated functions. Do NOT introduce broad "
         f"exception handlers (never `except Exception: return SENTINEL` — that "
-        f"masks bugs as sentinel values). Every behavior that currently works "
-        f"must keep working. Re-emit the ENTIRE project so it can be re-run, "
-        f"but the diff vs current code should be as small as possible. {_EMIT}"))
+        f"masks bugs as sentinel values). Do NOT invent new error sentinel "
+        f"strings that don't appear in the spec — return only the exact "
+        f"sentinels the spec names, or a real value. Every behavior that "
+        f"currently works must keep working. Re-emit the ENTIRE project so "
+        f"it can be re-run, but the diff vs current code should be as small "
+        f"as possible. {_EMIT}"))
     if nf:
         panic = _panic_pattern(nf)
         if panic:
@@ -151,6 +203,10 @@ def fix(d, files, failed):
             # contract doesn't cover. Keep the previous code; the outer
             # loop's keep-best guard will retry or stall out on plateau.
             print(f"  [reject] panic pattern in fix: {panic}", flush=True)
+            return files
+        invented = _invented_sentinel(nf)
+        if invented:
+            print(f"  [reject] invented sentinel in fix: {invented}", flush=True)
             return files
         files = nf
         _write(files, d)
