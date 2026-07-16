@@ -294,6 +294,44 @@ checkout math, not for a landing page. On a run the model already gets right, th
 loop adds no correctness (zero fix rounds) — it's insurance, not overhead you always
 pay. (Opus pending — rate-limited during testing; the mechanism is model-independent.)
 
+**Honest limit — the loop can hit the `MAX_FIX` ceiling and deliver
+un-converged code.** Retested on `fsheet` (a formula spreadsheet engine,
+17 held-out tests) with Haiku:
+
+| Run | held-out | notes |
+|---|---:|---|
+| A one-shot run 0 | 13/17 | ranges + parens buggy |
+| A one-shot run 1 | 17/17 | perfect |
+| B verify-loop run 0 | **10/17** | 3 fix rounds — verify still flagged 3 failures at exit |
+
+Autopsy: verify's 6 criteria correctly flagged the initial range +
+precedence bugs. Haiku's fix rounds fixed those — but under pressure to
+make failures go away also added a defensive
+`except Exception: return "#DIV/0!"` catch-all in the expression parser.
+Any subsequent parser hiccup now silently returns `#DIV/0!` instead of
+the real value, breaking `test_basic_ref_and_add`, unary minus, cycle
+detection, and recalc-after-change. Running verify against the final B
+code correctly reports 3 gating FAILs — the contract *did* catch the
+regression. The loop just ran out of fix rounds (`MAX_FIX=3` in
+`verify_loop.py`) and returned the still-broken code, which then landed
+at 10/17 on held-out.
+
+Two lessons:
+
+1. **Trust the verify verdict at exit, not just the fix-round count.**
+   The loop should refuse to declare success — or fall back to the
+   pre-loop code — if verify still reports gating failures after
+   `MAX_FIX` rounds. `verify_loop.py` currently just exits and returns
+   whatever the last fix round produced. That's a fixable bug.
+2. **Haiku's fix pattern under pressure is to silently swallow errors.**
+   A blanket `except Exception: return SENTINEL` is a well-known
+   antipattern; a pre-verify lint step could flag it and stop the fix
+   round from being accepted at all.
+
+The mechanism is still real — verify keeps catching the bugs — but the
+downstream policy (what to do when the model can't converge) is worth
+tightening before shipping the loop as a hard promise.
+
 ## The CLI
 
 | Command | What it does | Needs an LLM? |
