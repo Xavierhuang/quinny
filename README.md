@@ -328,9 +328,38 @@ Two lessons:
    antipattern; a pre-verify lint step could flag it and stop the fix
    round from being accepted at all.
 
-The mechanism is still real — verify keeps catching the bugs — but the
-downstream policy (what to do when the model can't converge) is worth
-tightening before shipping the loop as a hard promise.
+*Follow-up experiment.* We then doubled the contract to 11 criteria
+(added unary minus, MIN/MAX/AVG, rectangular ranges, diamond-not-cycle,
+recalc-explicitly) and raised `MAX_FIX` to 5, then re-ran:
+
+| Run | held-out | notes |
+|---|---:|---|
+| A one-shot run 0 | 17/17 | perfect |
+| A one-shot run 1 | 15/17 | small swing (2 tests off) |
+| B verify-loop run 0 | 13/17 | 2 fix rounds — verify PASSED |
+| B verify-loop run 1 | 14/17 | 2 fix rounds — verify PASSED |
+
+Summary: **A mean 94% → B mean 79%** at **5.2× tokens, 3.5× time**. Both
+B runs converged (verify said PASS after 2 rounds) — so this isn't a
+`MAX_FIX` exhaustion. The 11-criterion contract still under-specifies;
+Haiku found rewrites that satisfy all 11 while regressing behaviors
+still not covered.
+
+**The refined thesis, honest version:**
+
+- **Loop helps** when one-shot is *unreliable* — swings between 100% and
+  catastrophic 0% (mini_sheet on both Haiku and Kimi). The loop closes
+  the catastrophic tail; net correctness goes from ~50% mean → 100%.
+- **Loop hurts** when one-shot is *already mostly-right* (fsheet + Haiku
+  at 94% one-shot). Fix rounds' rewrites introduce more bugs than they
+  solve, and the contract can't discipline behaviors it doesn't test.
+  The loop can regress net correctness by ~15 percentage points *while
+  believing it succeeded*.
+
+Use the loop where one-shot is genuinely risky (unfamiliar logic,
+sometimes-broken outputs, high cost of a silent bug). Skip it — or
+just use it as a passive check without letting fix rounds mutate the
+code — where the base model is already reliable on the task.
 
 ## The CLI
 
