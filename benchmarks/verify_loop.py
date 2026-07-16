@@ -272,24 +272,30 @@ def loop():
                else run_saved(PLAN, d, suite))
         res = [r for r in res if r.criterion.kind == "test"]
         passed = sum(1 for r in res if r.status == "PASS")
+        pass_set = frozenset(r.criterion.index for r in res if r.status == "PASS")
         # Carry the expected-vs-got detail so the fix turn learns WHAT was wrong,
         # not just THAT it failed — this is what breaks a re-guessing stall.
         failed = [r.criterion.text + (f"\n    → {r.detail}" if r.detail else "")
                   for r in res if r.status != "PASS"]
-        return passed, failed
+        return passed, failed, pass_set
 
     files = generate(d)
-    passed, failed = check(first=True)
+    passed, failed, best_set = check(first=True)
     # keep-best: never return code worse than the best version we've seen.
-    best_passed, best_files = passed, dict(files)
+    best_files = dict(files)
     rounds = 0
     stale = 0  # consecutive rounds without progress
     while failed and rounds < MAX_FIX:
         rounds += 1
         files = fix(d, files, failed)
-        passed, failed = check(first=False)
-        if passed > best_passed:
-            best_passed, best_files = passed, dict(files)  # progress → adopt
+        passed, failed, pass_set = check(first=False)
+        # Monotonic keep-best: adopt a fix ONLY if it keeps every contract test
+        # that already passed AND adds at least one (strict superset). This
+        # refuses fixes that TRADE a working behavior for another — net-positive
+        # on pass-count but a regression on the passing SET — which is the
+        # pattern that silently drifts held-out correctness DOWN.
+        if pass_set > best_set:
+            best_files, best_set = dict(files), pass_set
             stale = 0
         else:
             stale += 1
