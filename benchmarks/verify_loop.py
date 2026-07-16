@@ -23,11 +23,11 @@ import bench  # noqa: E402
 from quinny.contract import verify  # noqa: E402
 from quinny._capabilities import make_client, thinking_kwargs  # noqa: E402
 
-TASK = "mini_sheet"
+TASK = os.environ.get("QUINNY_TASK", "mini_sheet")
 PROMPT = (ROOT / "benchmarks" / "prompts" / f"{TASK}.txt").read_text().strip()
 PLAN = ROOT / "benchmarks" / "plans" / f"{TASK}.good.qn"
 MODEL = os.environ.get("QUINNY_MODEL", "claude-haiku-4-5")
-RUNS = 3
+RUNS = int(os.environ.get("QUINNY_RUNS", "3"))
 MAX_FIX = 3
 
 
