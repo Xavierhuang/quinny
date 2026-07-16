@@ -147,8 +147,14 @@ def main() -> int:
                 status = f"run-fail: {type(e).__name__}: {str(e)[:60]}"
             run_dt = time.time() - t0
 
-        coverage = f"{100 * total // n}%" if n else "-"
-        dropped = max(0, n - total)  # criteria the emit silently omitted
+        # Because the impl is correct, every criterion that had a real
+        # emitted test should PASS. Any FAIL against a correct impl means
+        # the emit either dropped the criterion or mangled its test —
+        # both are gate-integrity failures. So on this benchmark:
+        #   coverage = fraction the emit actually covered
+        #   dropped  = criteria the emit silently omitted or broke
+        coverage = f"{100 * passed // n}%" if n else "-"
+        dropped = max(0, n - passed)
 
         print(f"{n:>5} {emit_dt:>8.1f} {suite_lines:>7} "
               f"{run_dt:>8.2f} {passed}/{total:<11} {coverage:>9} {dropped:>8} {status}")

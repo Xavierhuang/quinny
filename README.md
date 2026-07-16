@@ -157,18 +157,29 @@ path traversal, session-token expiry ignored, rate-limit off-by-one):
 | Defect criteria caught across buggy impls | **12 / 20** |
 | False-FAIL on correct impls | 2 / 20 criteria (cried wolf, safe direction) |
 
-**Scale** (`verify_scale.py`) — sweep from 10 → 100 acceptance criteria per
-spec. Confirms the flow doesn't fall apart at scale:
+**Scale** (`verify_scale.py`) — sweep from 10 → 1000 acceptance criteria per
+spec. This is the harshest coherence test: does the emit stay honest as
+the spec grows?
 
-| N criteria | emit time | run time (committed suite) | coverage |
-|---:|---:|---:|---:|
-| 10  |  6.5s | 0.27s | 100% |
-| 25  | 12.7s | 0.25s | 100% |
-| 50  | 24.3s | 0.29s | 100% |
-| 100 | 46.4s | 0.31s | 100% |
+| N criteria | emit time | suite lines | passed / N | coverage | verdict |
+|---:|---:|---:|---:|---:|---|
+| 10   | 12.3s | 73  | 10/10   | 100%    | coherent |
+| 25   | 13.2s | 158 | 25/25   | 100%    | coherent |
+| 50   | 24.1s | 316 | 50/50   | 100%    | coherent |
+| 100  | 45.8s | 623 | 100/100 | 100%    | coherent |
+| 250  | 28.3s | 663 | 102/250 | **41%** | **degrading** |
+| 500  | 58.3s | 366 | 0/500   | **0%**  | **collapsed** |
+| 1000 | 55.7s | 157 | 0/1000  | **0%**  | **collapsed** |
 
-Emit is linear (~0.47s per criterion); the committed suite re-runs flat at
-~0.28s regardless of N — no model, no drift.
+**Honest limit named**: on Haiku 4.5 the emit stays coherent through ~100
+criteria and collapses past 250 — the model runs into its output-token
+ceiling and either truncates the suite or gives up (note `suite lines`
+shrinking from 623 → 157 as N grows). This is a false-*FAIL* cliff, not
+a false-PASS one: missing tests fail-by-default, so the safety property
+still holds — but past ~100 criteria you need a bigger model (Sonnet,
+Opus), a chunked emit, or a hand-reviewed committed suite. The committed
+suite path (`--suite`, no model) has no such limit and re-runs flat at
+~0.3s regardless of N.
 
 **Subtle-bug classes** (`verify_subtle.py`) — 6 defect variants each targeting
 one criterion: off-by-one at capacity, silent NaN in aggregation, unicode
@@ -184,11 +195,29 @@ The kind of bug humans reliably miss in review:
 After one emit, the committed suite (`benchmarks/fixtures/subtle/suite.py`)
 runs offline forever — the pattern you'd use in CI.
 
-**Across all five benchmarks: 0 false-PASS on 85 implementations** spanning
-synthetic defects, real model-generated code, CVE-shaped bug patterns, and
-subtle-defect classes. The handful of disagreements are verify being *stricter*
-than the reference — the safe direction for a gate. That reliability is what
-makes the write→verify→fix loop below actually work.
+**Real-OSS** (`verify_real_oss.py`) — the strongest single data point in the
+suite: verify pointed at [`cachetools`](https://github.com/tkem/cachetools)
+(~2k stars, 15+ years old, *not* authored by us). A thin wrapper exposes
+`LRUCache` and `TTLCache`; the .qn spec targets 8 documented API guarantees.
+Then a targeted mutation is injected (LRU-recency bypass on reads):
+
+| Variant | Verdict | Ground truth |
+|---|---|---|
+| pristine cachetools (shipping code) | 8/8 PASS | ✅ 0 cried-wolf on real library |
+| mutated (LRU-recency defect) | 7/8 PASS, C3 fails | ✅ surgical: exactly the injected bug |
+
+Neither failure mode fired: the gate did not cry wolf on real shipping code,
+and it identified the exact criterion the mutation targeted with zero
+collateral. This is the answer to *"of course the gate catches bugs you
+wrote"* — the library, the wrapper wiring, and the test scaffolding all
+work end-to-end on code we did not author.
+
+**Across all six benchmarks: 0 false-PASS on ~90 implementations** spanning
+synthetic defects, real model-generated code, CVE-shaped bug patterns,
+subtle-defect classes, and a real published library. The handful of
+disagreements are verify being *stricter* than the reference — the safe
+direction for a gate. That reliability is what makes the write→verify→fix
+loop below actually work.
 
 **Cross-language** (*experimental*) — the `.qn` contract is language-agnostic; only
 the emitted suite differs. `--lang python` → pytest, `--lang js` → Node's `node:test`,

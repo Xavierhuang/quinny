@@ -11,7 +11,7 @@ and everything else PASS.
 """
 from __future__ import annotations
 
-from cachetools import LRUCache, TTLCache
+from cachetools import Cache, LRUCache, TTLCache
 
 
 def make_lru(maxsize):
@@ -38,11 +38,11 @@ def put(c, k, v):
 
 
 def get(c, k):
-    # DEFECT: for LRUCache, bypass the recency update by hitting the
-    # underlying dict directly. TTLCache still goes through normal access
-    # (so expiration semantics remain intact — the bug is surgical).
+    # DEFECT: for LRUCache, call the base Cache.__getitem__ which returns
+    # the value + raises KeyError like normal but does NOT update recency.
+    # TTLCache goes through the normal LRUCache path (expiration intact).
     if isinstance(c, LRUCache) and not isinstance(c, TTLCache):
-        return dict.__getitem__(c, k)
+        return Cache.__getitem__(c, k)
     return c[k]
 
 

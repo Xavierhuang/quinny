@@ -168,7 +168,12 @@ def main() -> int:
     print("-" * 78)
     print(f"False-PASS (missed a real-library defect): {false_pass}   <- dangerous")
     print(f"False-FAIL (cried wolf on real code):      {false_fail}")
-    print(f"Model: {MODEL}   Suite: {suite_path.relative_to(ROOT)}")
+    suite_display = suite_path.resolve()
+    try:
+        suite_display = suite_display.relative_to(ROOT)
+    except ValueError:
+        pass
+    print(f"Model: {MODEL}   Suite: {suite_display}")
     return 1 if false_pass else 0
 
 
