@@ -45,6 +45,10 @@ component Sheet
         set_cell('A1','=A1') raises CycleError; with A1='=B1', set_cell('B1','=A1') raises CycleError and leaves get_value(A1)==0.
     test
         a formula '=1/0' raises ValueError; a reference to an empty cell evaluates to 0.
+    test
+        literals: set_cell('A1','hello') gives get_value('A1')=='hello' (a non-numeric string is stored raw); set_cell('A2','5') gives get_value('A2')==5 as an int; an unset cell get_value('Z9') is 0.
+    test
+        a rectangular SUM block: A1=1, A2=2, B1=3, B2=4, C1='=SUM(A1:B2)' gives get_value(C1)==10 (every cell in the 2x2 block is summed).
     success
         Sheet and CycleError implement literals, arithmetic with precedence and parentheses, SUM ranges, dependency propagation, and cycle rejection exactly as specified.
 
