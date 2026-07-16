@@ -8,7 +8,7 @@ that embeds Quinny as its built-in verify loop.
 Describe *what* your software must do — its components and their concrete
 acceptance criteria — in a small, reviewable `.qn` file. Quinny turns those
 criteria into a runnable test suite and **verifies any implementation against
-them**: code written by a human, by Claude Code, by Cursor — in Python,
+them** — code written by a human or by any AI coding assistant, in Python,
 JavaScript, or Swift. Write the contract once; enforce it forever, in any language, in CI.
 
 ```
