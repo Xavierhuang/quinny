@@ -69,24 +69,34 @@ def generate(d):
     return files
 
 
+# Well-known Excel-style error sentinels that a spreadsheet impl might
+# reasonably use for defensive code paths, even if the spec doesn't name
+# them explicitly. Allowed by default so the lint doesn't fight common
+# idioms. Novel Haiku-invented tokens like "#PARSE!" are still rejected.
+_STANDARD_SENTINELS: frozenset[str] = frozenset({
+    "#DIV/0!", "#N/A", "#NAME?", "#NULL!", "#NUM!", "#REF!", "#VALUE!",
+})
+
 _SPEC_SENTINELS_CACHE: set[str] | None = None
 
 
 def _spec_sentinels() -> set[str]:
-    """Extract every #SENTINEL string that appears in the spec text.
-
-    These are the ONLY error tokens the model is allowed to return. If a
-    fix round emits code returning a `#SOMETHING!` string that never
-    appears in the spec, the model is inventing an "expected error" to
-    make a failing case look intentional — real bug hidden as fake
-    sentinel. Caught fsheet Haiku returning `#PARSE!` for `=A1+A2` (which
-    should evaluate to a number).
-    """
+    """Union of: sentinels named in the .qn contract, sentinels mentioned
+    in the natural-language prompt, and the well-known Excel standard
+    set. The lint's "invented sentinel" test rejects only tokens
+    outside this union — genuinely novel error strings that the model
+    is inventing to make a failing case look like an expected error."""
     global _SPEC_SENTINELS_CACHE
     if _SPEC_SENTINELS_CACHE is None:
-        text = PLAN.read_text()
-        _SPEC_SENTINELS_CACHE = set(re.findall(r'"(#[A-Z][A-Z0-9!/]*)"', text))
-        _SPEC_SENTINELS_CACHE |= set(re.findall(r"'(#[A-Z][A-Z0-9!/]*)'", text))
+        sources = [PLAN.read_text()]
+        prompt_path = ROOT / "benchmarks" / "prompts" / f"{TASK}.txt"
+        if prompt_path.exists():
+            sources.append(prompt_path.read_text())
+        pattern = re.compile(r"#[A-Z][A-Z0-9!/?]*")
+        found: set[str] = set(_STANDARD_SENTINELS)
+        for src in sources:
+            found |= set(pattern.findall(src))
+        _SPEC_SENTINELS_CACHE = found
     return _SPEC_SENTINELS_CACHE
 
 
