@@ -130,6 +130,72 @@ def _surface_swift(impl_dir: Path) -> str:
     return "\n".join(parts) or "(no Swift declarations found)"
 
 
+def _surface_go(impl_dir: Path) -> str:
+    parts = []
+    for go in sorted(impl_dir.glob("*.go")):
+        if go.name.endswith("_test.go") or go.name == "main.go":
+            continue
+        text = go.read_text()
+        pkg_m = re.search(r"^\s*package\s+([A-Za-z_]\w*)", text, re.MULTILINE)
+        pkg = pkg_m.group(1) if pkg_m else "?"
+        # Exported names in Go start with an uppercase letter.
+        exported = set()
+        for m in re.finditer(r"^\s*(?:func|type|const|var)\s+([A-Z]\w*)",
+                              text, re.MULTILINE):
+            exported.add(m.group(1))
+        # func (r Receiver) Method(...) — methods on exported receivers
+        for m in re.finditer(
+                r"^\s*func\s+\(\s*\w+\s+\*?([A-Z]\w*)\s*\)\s+([A-Z]\w*)",
+                text, re.MULTILINE):
+            exported.add(f"{m.group(1)}.{m.group(2)}")
+        if exported:
+            parts.append(f"- {go.name} (package {pkg}): {', '.join(sorted(exported))}")
+    return "\n".join(parts) or "(no Go declarations found)"
+
+
+def _parse_go_test(out: str) -> dict[int, str]:
+    """Parse `go test -v` output. Lines look like:
+        === RUN   TestC01
+        --- PASS: TestC01 (0.00s)
+        --- FAIL: TestC02 (0.00s)
+    """
+    status = {}
+    for m in re.finditer(r"^--- (PASS|FAIL):\s+TestC(\d+)\b", out, re.MULTILINE):
+        status[int(m.group(2))] = "PASS" if m.group(1) == "PASS" else "FAIL"
+    return status
+
+
+def _run_go(impl_dir: Path, suite_src: str) -> str:
+    """Go is package-scoped. We copy the impl's .go files (skipping main.go
+    and *_test.go), drop the emitted suite next to them as
+    `quinny_contract_test.go`, ensure a go.mod is present, and run
+    `go test -v` in that dir. A missing go.mod would break the build, so we
+    synthesize a minimal one if the impl dir doesn't have one already."""
+    import shutil
+    build = Path(tempfile.mkdtemp(prefix="qgo_"))
+    for go in impl_dir.glob("*.go"):
+        if go.name == "main.go" or go.name.endswith("_test.go"):
+            continue
+        # Skip a previously-emitted Quinny suite that happens to sit in the
+        # same dir (e.g. user passed --emit ./suite.go). Copying it would
+        # redeclare TestC01... alongside the file we're about to write.
+        text = go.read_text()
+        if re.search(r"^\s*func\s+TestC\d+\s*\(", text, re.MULTILINE):
+            continue
+        shutil.copy(go, build / go.name)
+    # Reuse impl's go.mod if present (preserves module path); else synthesize.
+    src_mod = impl_dir / "go.mod"
+    if src_mod.exists():
+        shutil.copy(src_mod, build / "go.mod")
+    else:
+        (build / "go.mod").write_text("module quinny_contract\n\ngo 1.21\n")
+    (build / "quinny_contract_test.go").write_text(suite_src)
+    r = subprocess.run(["go", "test", "-v", "./..."], cwd=str(build),
+                       capture_output=True, text=True, timeout=180)
+    shutil.rmtree(build, ignore_errors=True)
+    return r.stdout + r.stderr
+
+
 def _run_swift(impl_dir: Path, suite_src: str) -> str:
     """Swift is compiled: copy the implementation's declaration files, drop the
     generated test as main.swift (top-level code must live there), compile them
@@ -212,6 +278,25 @@ c01, c02, ... matching the numbers.
 stripped at runtime; assertions run on values."""
 
 
+_SYSTEM_GO = """You write a Go acceptance suite using the standard `testing` \
+package (no third-party libraries). Output ONLY one Go file — no prose, no \
+markdown fences.
+
+Rules:
+- The file will be dropped INTO the same package as the impl (same directory), \
+so use the impl's types and functions DIRECTLY — do NOT add an import for the \
+impl. The `package <name>` line at the top MUST match the impl's package.
+- Import only `"testing"` from the standard library (add others only if strictly \
+needed, e.g. `"errors"`, `"math"`).
+- Write EXACTLY one `func TestC01(t *testing.T) { ... }` per numbered criterion, \
+named TestC01, TestC02, ... matching the numbers. Use `t.Errorf` on failure \
+(NOT `t.Fatal`, so a failure doesn't hide later criteria).
+- Call the API EXACTLY as its signatures show. Panics on the impl side become \
+test failures automatically. For error criteria, call `defer func() { \
+if recover() == nil { t.Errorf(\"expected panic\") } }()` or check the returned \
+error explicitly."""
+
+
 _SYSTEM_SWIFT = """You write a Swift acceptance suite that checks whether an \
 implementation satisfies a specification. Output ONLY Swift top-level code (it \
 becomes main.swift) — no prose, no markdown fences.
@@ -254,6 +339,13 @@ LANGS = {
         "cmd": lambda p: ["node", "--experimental-strip-types",
                           "--test", "--test-reporter=tap", str(p)],
         "env": lambda impl: {},
+    },
+    "go": {
+        # Uses `go test -v` in a temp dir with the impl's .go files + the
+        # emitted test file; synthesizes a minimal go.mod if the impl dir
+        # doesn't ship one.
+        "system": _SYSTEM_GO, "surface": _surface_go, "parse": _parse_go_test,
+        "compile_run": _run_go,
     },
     "swift": {
         "system": _SYSTEM_SWIFT, "surface": _surface_swift, "parse": _parse_tap,

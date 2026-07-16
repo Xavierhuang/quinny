@@ -9,7 +9,7 @@ Describe *what* your software must do — its components and their concrete
 acceptance criteria — in a small, reviewable `.qn` file. Quinny turns those
 criteria into a runnable test suite and **verifies any implementation against
 them** — code written by a human or by any AI coding assistant, in Python,
-JavaScript, TypeScript, or Swift. Write the contract once; enforce it forever, in any language, in CI.
+JavaScript, TypeScript, Go, or Swift. Write the contract once; enforce it forever, in any language, in CI.
 
 ```
 spec.qn ──► quinny verify ──► ✓/✗ per acceptance criterion, on ANY code, ANY language
@@ -263,6 +263,7 @@ loop below actually work.
 **Cross-language** (*experimental*) — the `.qn` contract is language-agnostic; only
 the emitted suite differs. `--lang python` → pytest, `--lang js` → Node's `node:test`,
 `--lang ts` → same runner under `node --experimental-strip-types` (Node 22.6+),
+`--lang go` → `go test -v` in the impl's package (synthesizes a `go.mod` if missing),
 `--lang swift` → a test compiled alongside the code with `swiftc`. The same contract
 that gates Python gates a correct **JavaScript** impl (6/6) and a **Swift** one (a
 correct cart 4/4, a broken cart 2/4 — catching exactly the two planted defects).
@@ -395,7 +396,7 @@ it's now insurance that pays out net-positive.
 | `quinny check <file>` | Parse + validate the task graph (missing deps, cycles) | no |
 | `quinny graph <file>` | Print the task graph | no |
 | `quinny plan  <file>` | Show execution layers | no |
-| `quinny verify <file> <impl/>` | Compile `test` criteria → run them against code → gate (`--lang python`/`js`/`ts`/`swift`) | **yes** (or `--suite`, no) |
+| `quinny verify <file> <impl/>` | Compile `test` criteria → run them against code → gate (`--lang python`/`js`/`ts`/`go`/`swift`) | **yes** (or `--suite`, no) |
 | `quinny gen "<english>"` | Translate English → a `.qn` plan | **yes** |
 | `quinny build <file>` | *(experimental)* generate code from a `.qn` | **yes** |
 
