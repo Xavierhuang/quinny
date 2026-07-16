@@ -1,0 +1,37 @@
+project Cron
+
+component Scheduler
+    goal
+        A 5-field cron scheduler class Cron in a single module cron.py, the public API, with next_times(after, n).
+    constraint
+        Cron(expr) parses "minute hour day-of-month month day-of-week" (minute 0-59, hour 0-23, dom 1-31, month 1-12, dow 0-6 with 0=Sunday, also accept 7 as Sunday). Each field is comma-separated terms; a term is *, a, a-b, */s, or a-b/s (step across the range). Raise ValueError unless there are exactly 5 fields.
+    constraint
+        next_times(after, n) returns the next n fire times STRICTLY AFTER the ISO-8601 string after, each an ISO-8601 string at second :00. A time equal to after is excluded.
+    constraint
+        A time fires when minute, hour, and month match AND the day matches: if BOTH dom and dow are restricted the day matches when EITHER matches (the cron OR-rule); if only one is restricted only that one; if both are * every day matches. Non-existent days never match (Feb 29 only in leap years).
+    test
+        Cron("*/15 * * * *").next_times("2024-01-01T00:07:00", 3) is ["2024-01-01T00:15:00","2024-01-01T00:30:00","2024-01-01T00:45:00"].
+    test
+        strictly after: Cron("0 0 * * *").next_times("2024-01-01T00:00:00", 1) is ["2024-01-02T00:00:00"], not the equal instant.
+    test
+        step within a range: Cron("0 0-12/3 * * *").next_times("2024-01-01T00:30:00", 4) is ["2024-01-01T03:00:00","2024-01-01T06:00:00","2024-01-01T09:00:00","2024-01-01T12:00:00"].
+    test
+        the OR-rule: Cron("0 0 1 * 1").next_times("2024-01-29T12:00:00", 3) is ["2024-02-01T00:00:00","2024-02-05T00:00:00","2024-02-12T00:00:00"] (Feb 1 fires by day-of-month though it is a Thursday; the Mondays fire by day-of-week).
+    test
+        weekday-only (no OR-rule): Cron("0 9 * * 1-5").next_times("2024-03-08T12:00:00", 1) is ["2024-03-11T09:00:00"], skipping the weekend.
+    test
+        Sunday is both 0 and 7: Cron("0 12 * * 0").next_times("2024-03-08T00:00:00", 1) and Cron("0 12 * * 7").next_times("2024-03-08T00:00:00", 1) are both ["2024-03-10T12:00:00"].
+    test
+        leap-only day: Cron("0 0 29 2 *").next_times("2024-03-01T00:00:00", 1) is ["2028-02-29T00:00:00"], skipping the non-leap Februaries.
+    test
+        invalid: Cron("0 0 * *") raises ValueError.
+    success
+        Cron handles *, ranges, steps, and lists in every field, the day-of-month/day-of-week OR-rule, strictly-after semantics, leap-year days, and Sunday as 0 or 7.
+
+component Demo
+    goal
+        A runnable main.py that builds a couple of Cron objects, prints some next_times results, and exits 0.
+    uses
+        Scheduler
+    depends
+        Scheduler

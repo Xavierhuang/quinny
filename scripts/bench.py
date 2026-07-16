@@ -570,6 +570,9 @@ _ENTRYPOINTS: dict[str, tuple[str, list[str]]] = {
     "globmatch":  ("globmatch.py",  ["matches"]),
     "cidr":       ("cidr.py",       ["Network"]),
     "fsheet":     ("fsheet.py",     ["Sheet"]),
+    "cron":       ("cron.py",       ["Cron"]),
+    "textkit":    ("textkit.py",    ["slugify", "ordinal", "pluralize", "roman",
+                                     "format_bytes", "truncate", "caesar"]),
 }
 
 

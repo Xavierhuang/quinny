@@ -1,0 +1,28 @@
+A pure-Python cron scheduler. Standard library only (`datetime` is fine). The public API MUST live in a file named `cron.py` and expose a class `Cron`.
+
+`Cron(expr)` parses a standard 5-field cron expression: `minute hour day-of-month month day-of-week` (single spaces). Field ranges: minute 0–59, hour 0–23, day-of-month 1–31, month 1–12, day-of-week 0–6 where 0 = Sunday (also accept 7 as Sunday).
+
+Each field is one or more comma-separated terms; a term is one of:
+- `*` — every value in the field's range.
+- `a` — the single value a.
+- `a-b` — the inclusive range a..b.
+- `*/s` or `a-b/s` — every s-th value across `*` (the whole range) or across `a-b`.
+
+So `*/15` in minutes is {0,15,30,45}; `0-12/3` in hours is {0,3,6,9,12}; `8,12,17` is a list. Raise `ValueError` if the expression does not have exactly 5 fields.
+
+Method `next_times(after, n)` returns a list of the next `n` fire times STRICTLY AFTER the ISO-8601 timestamp string `after` (e.g. `"2024-01-01T00:07:00"`). Each returned time is an ISO-8601 string at second `:00` (e.g. `"2024-01-01T00:15:00"`). A fire time equal to `after` is NOT included — only times strictly greater.
+
+A timestamp fires when its minute, hour, and month each match their field, AND the day matches per this rule:
+- If BOTH day-of-month and day-of-week are restricted (neither is `*`), the day matches when EITHER the day-of-month matches OR the day-of-week matches (this is the standard cron OR-rule).
+- If only day-of-month is restricted, the day matches when day-of-month matches.
+- If only day-of-week is restricted, the day matches when day-of-week matches.
+- If both are `*`, every day matches.
+
+Days that don't exist are simply never matched — e.g. `0 0 29 2 *` (Feb 29) only fires in leap years, so from March 2024 the next fire is 2028-02-29.
+
+Examples:
+- `Cron("*/15 * * * *").next_times("2024-01-01T00:07:00", 3)` → `["2024-01-01T00:15:00","2024-01-01T00:30:00","2024-01-01T00:45:00"]`
+- `Cron("0 9 * * 1-5").next_times("2024-03-08T12:00:00", 1)` → `["2024-03-11T09:00:00"]` (skips the weekend).
+- `Cron("0 0 1 * 1")` fires on the 1st of the month OR any Monday.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that prints a couple of `next_times(...)` results and exits 0. `cron.py` must expose `Cron` as specified.

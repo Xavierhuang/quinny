@@ -1,0 +1,28 @@
+A pure-Python text/string utility toolkit. Standard library only. The public API MUST live in a file named `textkit.py` and expose these 24 functions exactly (names and behavior):
+
+1. `slugify(s)` — lowercase; replace each run of non-`[a-z0-9]` characters with a single `-`; strip leading/trailing `-`. `slugify("Hello,  World!")` → `"hello-world"`; `slugify("  a__b  ")` → `"a-b"`.
+2. `snake_case(s)` — like slugify but the separator is `_`. `snake_case("Hello World-Foo")` → `"hello_world_foo"`.
+3. `title_case(s)` — for each whitespace-separated word, uppercase the first character and lowercase the rest; join with single spaces. `title_case("hELLo woRLD")` → `"Hello World"`.
+4. `capitalize_first(s)` — uppercase only the first character, leave the rest unchanged. `capitalize_first("hello WORLD")` → `"Hello WORLD"`.
+5. `snake_to_camel(s)` — `"foo_bar_baz"` → `"fooBarBaz"` (first segment unchanged, later segments capitalized, joined).
+6. `camel_to_snake(s)` — insert `_` before each uppercase letter (except at start) and lowercase. `"fooBarBaz"` → `"foo_bar_baz"`.
+7. `ordinal(n)` — integer to ordinal string: `1`→`"1st"`, `2`→`"2nd"`, `3`→`"3rd"`, `4`→`"4th"`, `21`→`"21st"`. The teens are the exception: `11`→`"11th"`, `12`→`"12th"`, `13`→`"13th"`, and likewise `111`→`"111th"`, `112`→`"112th"`, `113`→`"113th"`.
+8. `truncate(s, n)` — if `len(s) <= n` return `s` unchanged; otherwise return the first `n-1` characters followed by a single `…` (U+2026), so the result is exactly `n` characters. `truncate("hello world", 8)` → `"hello w…"`.
+9. `pluralize(word)` — English-ish plural. Irregulars: child→children, person→people, man→men, foot→feet, mouse→mice, tooth→teeth. A word ending in a consonant + `y` → replace `y` with `ies` (`city`→`cities`, but `boy`→`boys`). A word ending in `s`, `x`, `z`, `ch`, or `sh` → add `es` (`box`→`boxes`, `church`→`churches`). Otherwise add `s`.
+10. `count_words(s)` — number of whitespace-separated tokens. `count_words("  a  b   c ")` → `3`; `count_words("")` → `0`.
+11. `reverse_words(s)` — reverse the order of whitespace-separated words, joined by single spaces. `reverse_words("hello there world")` → `"world there hello"`.
+12. `is_palindrome(s)` — True if the string reads the same forwards and backwards ignoring case and all non-alphanumeric characters. `is_palindrome("A man, a plan, a canal: Panama")` → `True`.
+13. `format_bytes(n)` — humanize a byte count with one decimal place using base-1024 units B/KB/MB/GB (stop at GB). `format_bytes(500)` → `"500.0 B"`; `format_bytes(1024)` → `"1.0 KB"`; `format_bytes(1536)` → `"1.5 KB"`; `format_bytes(1048576)` → `"1.0 MB"`.
+14. `clamp(x, lo, hi)` — return `x` bounded to `[lo, hi]`.
+15. `percent(part, whole)` — `part/whole` as a rounded whole-number percent string; if `whole` is 0 return `"0%"`. `percent(1, 3)` → `"33%"`; `percent(2, 3)` → `"67%"`.
+16. `initials(name)` — the uppercase first letter of each whitespace-separated word, concatenated. `initials("john ronald tolkien")` → `"JRT"`.
+17. `dedupe_spaces(s)` — collapse every run of whitespace to a single space and strip the ends. `dedupe_spaces("a  b   c ")` → `"a b c"`.
+18. `wrap_words(s, width)` — greedily wrap the words into a list of lines, each at most `width` characters, never splitting a word. `wrap_words("the quick brown fox", 9)` → `["the quick", "brown fox"]`.
+19. `mask(s, visible)` — keep the last `visible` characters, replace the rest with `*`. If `visible >= len(s)` return `s`. `mask("1234567890", 4)` → `"******7890"`.
+20. `roman(n)` — integer (1–3999) to Roman numerals using subtractive notation. `roman(4)`→`"IV"`, `roman(9)`→`"IX"`, `roman(40)`→`"XL"`, `roman(1994)`→`"MCMXCIV"`.
+21. `from_roman(s)` — Roman numerals back to an integer. `from_roman("MCMXCIV")` → `1994`.
+22. `is_anagram(a, b)` — True if `a` and `b` are anagrams ignoring case and spaces. `is_anagram("listen", "silent")` → `True`.
+23. `caesar(s, k)` — Caesar-shift letters by `k` (wrapping within A–Z / a–z, preserving case, leaving non-letters unchanged). `caesar("abc", 1)` → `"bcd"`; `caesar("Hello, World!", 13)` → `"Uryyb, Jbeyq!"`.
+24. `count_vowels(s)` — number of vowels (a, e, i, o, u; case-insensitive). `count_vowels("Hello World")` → `3`.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that calls a few of these and exits 0. `textkit.py` must expose all 24 functions with exactly these names.

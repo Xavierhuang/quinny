@@ -1,0 +1,41 @@
+project TextKit
+
+component Toolkit
+    goal
+        A text/string utility toolkit in a single module textkit.py, the public API, exposing 24 functions: slugify, snake_case, title_case, capitalize_first, snake_to_camel, camel_to_snake, ordinal, truncate, pluralize, count_words, reverse_words, is_palindrome, format_bytes, clamp, percent, initials, dedupe_spaces, wrap_words, mask, roman, from_roman, is_anagram, caesar, count_vowels.
+    constraint
+        Each function has the exact name above and the standard behavior; standard library only.
+    test
+        slugify("Hello,  World!") is "hello-world" and snake_case("Hello World-Foo") is "hello_world_foo".
+    test
+        title_case("hELLo woRLD") is "Hello World" and capitalize_first("hello WORLD") is "Hello WORLD".
+    test
+        snake_to_camel("foo_bar_baz") is "fooBarBaz" and camel_to_snake("fooBarBaz") is "foo_bar_baz".
+    test
+        ordinal gives "1st","2nd","3rd","4th","21st" for 1,2,3,4,21 and the teens exception "11th","12th","13th","111th","112th","113th" for 11,12,13,111,112,113.
+    test
+        truncate("hello world", 8) is "hello w…" (first 7 chars plus one … character, length 8) and truncate("hi", 8) is "hi".
+    test
+        pluralize: city→"cities", boy→"boys", box→"boxes", church→"churches", child→"children".
+    test
+        format_bytes(500) is "500.0 B", format_bytes(1024) is "1.0 KB", format_bytes(1536) is "1.5 KB", format_bytes(1048576) is "1.0 MB".
+    test
+        percent(1,3) is "33%", percent(2,3) is "67%", percent(1,0) is "0%".
+    test
+        wrap_words("the quick brown fox", 9) is ["the quick","brown fox"] and mask("1234567890", 4) is "******7890".
+    test
+        roman(4)="IV", roman(9)="IX", roman(40)="XL", roman(1994)="MCMXCIV", and from_roman("MCMXCIV")=1994.
+    test
+        caesar("abc",1) is "bcd", caesar("xyz",3) is "abc", caesar("Hello, World!",13) is "Uryyb, Jbeyq!".
+    test
+        count_words("  a  b   c ") is 3, count_words("") is 0, reverse_words("hello there world") is "world there hello", is_palindrome("A man, a plan, a canal: Panama") is True, count_vowels("Hello World") is 3.
+    success
+        All 24 functions behave per their standard definitions, including the ordinal teens exception, pluralization rules, subtractive Roman numerals, and byte formatting.
+
+component Demo
+    goal
+        A runnable main.py that calls a few of the functions, prints results, and exits 0.
+    uses
+        Toolkit
+    depends
+        Toolkit
