@@ -361,6 +361,27 @@ sometimes-broken outputs, high cost of a silent bug). Skip it — or
 just use it as a passive check without letting fix rounds mutate the
 code — where the base model is already reliable on the task.
 
+**Follow-up fix (landed on `main`).** Two changes to close the fsheet
+regression: (1) a diff-aware `fix()` prompt that demands the smallest
+possible change and explicitly forbids broad-except panic patterns; (2)
+an AST-level lint that rejects any fix round whose new code has a
+narrow `except` and a broad `except Exception` returning the same
+sentinel (the exact shape that regressed 7 held-out tests). Same task,
+same model, both fixes active:
+
+| Configuration | A mean | B mean | Δ |
+|---|---:|---:|---:|
+| Original (6-crit contract, `MAX_FIX=3`) | 88% | 59% | **-29pp** |
+| + Extended contract (11 crit, `MAX_FIX=5`) | 94% | 79% | **-15pp** |
+| + Diff-aware prompt + panic lint | 76% | **94%** | **+18pp** |
+
+The two fixes flipped fsheet Haiku from a -29pp regression into a
++18pp win. The lint fired zero times this run — the prompt alone was
+enough to stop the antipattern being emitted. The lint stays as
+defense in depth. B still isn't a clean 100% (one run landed at
+15/17), so the loop remains "insurance," not a magic upgrade — but
+it's now insurance that pays out net-positive.
+
 ## The CLI
 
 | Command | What it does | Needs an LLM? |
