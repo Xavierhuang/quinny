@@ -63,15 +63,49 @@ undefined refs, cycles, missing fields — which a flat criteria-list can't even
 represent. You could replicate this with JSON + a schema + a custom graph checker;
 `.qn` ships it. Still robustness, not output.
 
+## Result 4 — the OVERALL result (does a bug ship?)
+
+The narrow question is "code quality of one artifact." The broader, fairer reading
+is: does the *format* change the *overall outcome* — does a real bug ship? It can,
+through one channel: if a format silently drops a fat-fingered criterion, its gate
+has no test for that behavior, so a bug there passes the gate.
+
+Experiment (`benchmarks/end_to_end.py`): 12 textkit criteria, one authoring slip
+that Markdown drops (a sub-bulleted line) but `.qn` preserves. Build the gate from
+each, run it against an impl whose `roman()` is broken — the slipped criterion's
+behavior.
+
+```
+                             OVERALL RESULT over 5 trials
+  .qn gate caught the bug:   5/5   (roman test present → fails the broken impl)
+  md  gate caught the bug:   0/5   (criterion silently dropped → no test → bug ships)
+```
+
+Fully reproducible. The Markdown miss is **structural and deterministic** (the
+criterion is dropped by pure parsing, so no roman test can exist); the `.qn` catch
+was 5/5 across LLM suite-gen variance (freeze it with emit→`--suite` for a hard
+guarantee). So on the broad reading, **`.qn` yields a strictly better overall
+result than Markdown when authoring is imperfect** — a shipped bug vs a caught one
+— but purely via spec integrity (not losing your criteria), it **ties JSON**, and
+it **vanishes on clean authoring** (no dropped criterion → same outcome).
+
 ## Verdict
 
 | Axis | In favor of `.qn`? |
 |---|---|
-| Output / gate quality | **No** — dead wash across all four formats |
+| Output / gate quality (code of one artifact) | **No** — dead wash across all four formats |
+| Overall result with imperfect authoring | **Yes vs Markdown** (bug ships vs caught, 5/5); **ties JSON** |
 | Catching malformed specs | Beats Markdown; ties JSON |
 | Semantic validation (deps/cycles) built in | Yes, uniquely — but it's robustness |
 
-The reviewer's question — does the *language* improve *output*? — answer: **no.**
-Where `.qn` legitimately wins is catching bad specs before they ship a broken
-gate, with validation included. A narrow ergonomic/safety win, not a results win.
-Consistent with the rest of the benchmarks: the value is `verify`, not the syntax.
+Two readings of "does the language improve output":
+- **Code quality of one artifact, given the criteria** → **no**, dead wash. The
+  language does not make the model write better code.
+- **The overall result, with real (imperfect) authoring** → **yes vs Markdown**
+  (5/5: a bug ships under Markdown, caught under `.qn`), **tie with JSON**. The win
+  is spec integrity — not silently losing your criteria — plus built-in semantic
+  validation, and it disappears when authoring is clean.
+
+So the language's value is a **safety net for imperfect humans**, not model
+cleverness. Consistent with the rest of the benchmarks: the leverage is `verify`
+and a complete, preserved contract — not the syntax itself.
