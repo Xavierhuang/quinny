@@ -1,0 +1,39 @@
+project SemVer
+
+component Version
+    goal
+        A SemVer 2.0.0 version type in a single module semver.py: a class Version and a function satisfies, exposed as the public API.
+    constraint
+        Version(s) parses MAJOR.MINOR.PATCH with optional -prerelease and +build; exposes int major, minor, patch and a prerelease string (or None); raises ValueError on anything invalid (missing component, non-numeric core, trailing junk, empty).
+    constraint
+        Version supports < <= == > >= per SemVer 2.0.0 precedence: compare major, minor, patch NUMERICALLY; a version with a prerelease is LOWER than the same without; build metadata is IGNORED for precedence and equality.
+    constraint
+        Prerelease precedence compares dot-separated identifiers left to right: all-digit identifiers compare numerically; numeric identifiers rank below non-numeric; non-numeric compare by ASCII; when all prior identifiers are equal, more identifiers rank higher.
+    constraint
+        satisfies(version, range) supports exact versions, the comparators >= > <= <, a caret range (allows changes that do not modify the left-most non-zero component), and a tilde range (>=X.Y.Z and <X.(Y+1).0).
+    test
+        1.10.0 is greater than 1.2.0 (numeric, not lexical, core compare).
+    test
+        1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0.
+    test
+        alpha.2 < alpha.11 because numeric prerelease identifiers compare numerically.
+    test
+        1.0.0+build.1 equals 1.0.0+build.999 (build metadata ignored).
+    test
+        Version("1.2") and Version("a.b.c") each raise ValueError.
+    test
+        satisfies("1.9.9","^1.2.3") is True but satisfies("2.0.0","^1.2.3") and satisfies("1.2.2","^1.2.3") are False.
+    test
+        satisfies("0.2.9","^0.2.3") is True but satisfies("0.3.0","^0.2.3") is False (caret locks the minor when major is 0).
+    test
+        satisfies("1.2.9","~1.2.3") is True but satisfies("1.3.0","~1.2.3") is False.
+    success
+        Version ordering and satisfies match SemVer 2.0.0 across core, prerelease, build-metadata, and caret/tilde ranges.
+
+component Demo
+    goal
+        A runnable main.py that constructs versions, compares them, and checks a few satisfies() ranges, printing results and exiting 0.
+    uses
+        Version
+    depends
+        Version

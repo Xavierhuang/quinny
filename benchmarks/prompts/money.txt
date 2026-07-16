@@ -1,0 +1,11 @@
+A pure-Python money-allocation helper. Standard library only. The public API MUST live in a file named `money.py` and expose a function `allocate(total, weights)`.
+
+`allocate(total: int, weights: list[int]) -> list[int]`:
+- Split the integer `total` (an amount, e.g. cents; must be a non-negative int) proportionally across `weights` (a list of non-negative ints with at least one positive), returning a list the same length as `weights`.
+- Use the LARGEST-REMAINDER (Hamilton) method so the returned amounts SUM EXACTLY to `total` — no cent lost or invented. Concretely: let `W = sum(weights)`; give each index a base of `total * weights[i] // W`; there will be `total - sum(bases)` leftover units — distribute them ONE each to the indices with the largest remainder `total * weights[i] % W`, breaking ties by LOWER index.
+- A zero weight gets 0. `allocate(0, ...)` returns all zeros.
+- Raise `ValueError` if `weights` is empty, all weights are zero, any weight is negative, or `total` is negative.
+
+Examples: `allocate(100, [1,1,1])` is `[34,33,33]`; `allocate(101,[1,1,1])` is `[34,34,33]`; `allocate(3,[1,1])` is `[2,1]`; `allocate(100,[0,1])` is `[0,100]`.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that exits 0. `money.py` must expose `allocate` as specified.

@@ -565,6 +565,10 @@ _ENTRYPOINTS: dict[str, tuple[str, list[str]]] = {
     "mini_kv":    ("mini_kv.py",    ["MiniKV"]),
     "mini_sheet": ("mini_sheet.py", ["Sheet", "CycleError"]),
     "minilang":   ("minilang.py",   ["evaluate"]),
+    "semver":     ("semver.py",     ["Version", "satisfies"]),
+    "money":      ("money.py",      ["allocate"]),
+    "globmatch":  ("globmatch.py",  ["matches"]),
+    "cidr":       ("cidr.py",       ["Network"]),
 }
 
 

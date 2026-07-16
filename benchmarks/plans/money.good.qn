@@ -1,0 +1,31 @@
+project MoneyAllocate
+
+component Allocate
+    goal
+        A money-allocation function allocate(total, weights) in a single module money.py, the public API.
+    constraint
+        Split integer total (non-negative) proportionally across weights (non-negative ints, at least one positive) using the largest-remainder method: base[i] = total*weights[i] // sum(weights); distribute the leftover units one each to the indices with the largest remainder total*weights[i] % sum(weights), ties broken by lower index.
+    constraint
+        The returned list has the same length as weights and SUMS EXACTLY to total. A zero weight gets 0. allocate(0, ...) is all zeros.
+    constraint
+        Raise ValueError if weights is empty, all weights are zero, any weight is negative, or total is negative.
+    test
+        allocate(100, [1,1,1]) is [34,33,33] and the result always sums to total.
+    test
+        allocate(101, [1,1,1]) is [34,34,33] (two leftover units to the two lowest indices).
+    test
+        allocate(7, [1,1,1]) is [3,2,2] and allocate(3, [1,1]) is [2,1] (ties go to the lower index).
+    test
+        allocate(100, [0,1]) is [0,100]; allocate(10, [7,3]) is [7,3].
+    test
+        allocate with empty weights, all-zero weights, a negative weight, or a negative total each raises ValueError.
+    success
+        allocate splits amounts by largest remainder, never losing or inventing a unit.
+
+component Demo
+    goal
+        A runnable main.py that calls allocate on a few inputs, prints the results, and exits 0.
+    uses
+        Allocate
+    depends
+        Allocate

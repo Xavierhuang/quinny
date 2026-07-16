@@ -1,0 +1,16 @@
+A pure-Python IPv4 CIDR network library. Standard library only (do NOT use the `ipaddress` module — implement it yourself). The public API MUST live in a file named `cidr.py` and expose a class `Network`.
+
+`Network(s: str)` parses an IPv4 CIDR like `"192.168.1.0/24"`:
+- The address is four dotted decimal octets (each 0–255); the prefix after `/` is an integer 0–32.
+- HOST BITS in the address are masked off — `Network("192.168.1.130/24")` represents the `192.168.1.0/24` block.
+- Raise `ValueError` on anything invalid: prefix > 32 or < 0, an octet > 255, a missing prefix, or a malformed address.
+
+Methods:
+- `contains(ip: str) -> bool` — is the dotted-decimal `ip` inside this network?
+- `num_addresses() -> int` — number of addresses in the block (`2 ** (32 - prefix)`, so `/24` is 256, `/32` is 1, `/31` is 2).
+- `broadcast() -> str` — the last (all-host-bits-set) address as dotted decimal (`/24` of `192.168.1.0` → `"192.168.1.255"`).
+- `overlaps(other: Network) -> bool` — do the two blocks share any address? (Symmetric; a `/16` overlaps a `/24` contained in it.)
+
+Examples: `Network("10.0.0.0/8").contains("10.5.6.7")` is True, `contains("11.0.0.0")` is False; `Network("1.2.3.4/32").num_addresses()` is 1; `Network("10.0.0.0/8").overlaps(Network("10.1.0.0/16"))` is True.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that exits 0. `cidr.py` must expose `Network` as specified.

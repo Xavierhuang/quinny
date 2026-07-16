@@ -1,0 +1,29 @@
+project GlobMatch
+
+component Matcher
+    goal
+        A whole-string glob matcher matches(pattern, text) in a single module globmatch.py, the public API.
+    constraint
+        The pattern must match the ENTIRE text. * matches any run of zero or more characters (consecutive * behave as one); ? matches exactly one character.
+    constraint
+        [...] is a character class matching exactly one character, supporting ranges like a-z; a leading ! or ^ negates it. \\ escapes the next character so \\*, \\?, \\[, \\\\ match those literals.
+    test
+        matches("a*c","abbbc") and matches("a*c","ac") are True; matches("a*c","ab") is False.
+    test
+        matches("a?c","abc") is True; matches("a?c","ac") is False.
+    test
+        matches("[a-c]x","bx") is True; matches("[a-c]x","dx") is False; matches("[!a-c]x","dx") is True.
+    test
+        an escaped metachar is literal: matches("a\\*b","a*b") is True; matches("a\\*b","axb") is False.
+    test
+        anchoring: matches("abc","abcd") is False; matches("*","") is True; matches("a*b*c","axxc") is False.
+    success
+        matches implements *, ?, character classes with negation, escaping, and whole-string anchoring.
+
+component Demo
+    goal
+        A runnable main.py that calls matches on a few pattern/text pairs, prints the results, and exits 0.
+    uses
+        Matcher
+    depends
+        Matcher

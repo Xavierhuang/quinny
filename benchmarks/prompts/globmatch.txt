@@ -1,0 +1,12 @@
+A pure-Python glob matcher. Standard library only. The public API MUST live in a file named `globmatch.py` and expose a function `matches(pattern, text) -> bool` that returns whether `text` matches `pattern` as a WHOLE-STRING glob (the pattern must match the entire text, not a prefix).
+
+Pattern syntax:
+- `*` matches any run of zero or more characters (including empty). Consecutive `*` behave as one.
+- `?` matches exactly one character.
+- `[...]` is a character class: list characters and/or ranges like `a-z`. If the class begins with `!` or `^` it is NEGATED (matches one character NOT in the set). A class matches exactly one character.
+- `\` escapes the next character, so `\*`, `\?`, `\[`, `\\` match those literal characters.
+- Any other character matches itself literally.
+
+Examples: `matches("a*c","abbbc")` is True; `matches("a*c","ab")` is False; `matches("a?c","ac")` is False; `matches("[a-c]x","dx")` is False; `matches("[!a-c]x","dx")` is True; `matches(r"a\*b","a*b")` is True; `matches("abc","abcd")` is False; `matches("*","")` is True.
+
+Also ship a `main.py` with an `if __name__ == "__main__":` demo that exits 0. `globmatch.py` must expose `matches` as specified.

@@ -1,0 +1,33 @@
+project CIDR
+
+component Network
+    goal
+        An IPv4 CIDR network class Network in a single module cidr.py, the public API (implemented without the ipaddress module).
+    constraint
+        Network(s) parses "a.b.c.d/n": four octets 0-255 and a prefix 0-32. Host bits in the address are masked off, so 192.168.1.130/24 represents the 192.168.1.0/24 block.
+    constraint
+        Raise ValueError on invalid input: prefix above 32 or below 0, an octet above 255, a missing prefix, or a malformed address.
+    constraint
+        contains(ip) tests membership; num_addresses() returns 2 ** (32 - prefix); broadcast() returns the last address (all host bits set) as dotted decimal; overlaps(other) is symmetric and true when the blocks share any address.
+    test
+        Network("10.0.0.0/8").contains("10.5.6.7") is True and contains("11.0.0.0") is False.
+    test
+        host bits are masked: Network("192.168.1.130/24").contains("192.168.1.1") is True and contains("192.168.2.1") is False.
+    test
+        Network("1.2.3.4/32").num_addresses() is 1; Network("1.2.3.4/31").num_addresses() is 2; Network("192.168.1.0/24").num_addresses() is 256.
+    test
+        Network("192.168.1.0/24").broadcast() is "192.168.1.255".
+    test
+        Network("10.0.0.0/8").overlaps(Network("10.1.0.0/16")) is True (both directions); Network("10.0.0.0/24").overlaps(Network("11.0.0.0/24")) is False.
+    test
+        Network("1.2.3.4/33"), Network("999.0.0.0/8"), and Network("1.2.3.4") each raise ValueError.
+    success
+        Network handles masking, containment, counts, broadcast, and overlap across /8../32 including /31 and /32.
+
+component Demo
+    goal
+        A runnable main.py that builds a couple of networks, checks contains/overlaps, and exits 0.
+    uses
+        Network
+    depends
+        Network
