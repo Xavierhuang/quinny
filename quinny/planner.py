@@ -23,7 +23,7 @@ from quinny.parser import QuinnyParseError, parse
 from quinny.usage import UsageTracker
 
 
-SYSTEM_PROMPT = """You are a Quinny engineer. Quinny is a task-oriented intent language.
+SYSTEM_PROMPT = """You are a Quinny engineer. Quinny is an executable specification language.
 Output ONLY Quinny source. No prose. No markdown fences. No explanations.
 
 ## Quinny in one paragraph
