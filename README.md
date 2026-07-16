@@ -181,6 +181,12 @@ Opus), a chunked emit, or a hand-reviewed committed suite. The committed
 suite path (`--suite`, no model) has no such limit and re-runs flat at
 ~0.3s regardless of N.
 
+*Future work*: rerun the 250 / 500 / 1000 sweep on Sonnet 4.6 and Opus 4.7
+to see whether the ceiling moves and by how much. The first attempt got
+subscription-tier rate-limited (Sonnet/Opus share a 5-hour window that
+the Haiku sweep had already depleted); a fresh key or a later window
+should complete it.
+
 **Subtle-bug classes** (`verify_subtle.py`) — 6 defect variants each targeting
 one criterion: off-by-one at capacity, silent NaN in aggregation, unicode
 NFC/NFD confusion, wrong exception type, TTL integer overflow, TTL=0 semantics.
