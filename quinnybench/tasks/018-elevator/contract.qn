@@ -1,0 +1,27 @@
+project Elevator
+
+task ElevatorFIFOStateMachine
+    goal
+        A single elevator that serves floor requests in FIFO order, one floor per tick.
+    output
+        elevator_state
+    constraint
+        Class name is Elevator.
+        Module is impl.py.
+        Constructor takes num_floors, an int >= 2.
+        Direction is one of UP, DOWN, IDLE and is computed from current state.
+    test
+        A fresh Elevator(5) starts at floor 1 with direction IDLE and 0 pending.
+        Requesting a higher floor sets direction to UP.
+        One tick advances one floor toward the request.
+        Reaching the requested floor drops it from the queue.
+        Serving one request with no pending returns to IDLE.
+        Duplicate requests do not stack.
+        FIFO: request(5) then request(2) from floor 1 reaches floor 5 after 4 ticks.
+        Continuing 3 more ticks reaches floor 2 with 0 pending.
+        Requesting floor 0 raises ValueError.
+        Requesting a floor above num_floors raises ValueError.
+        Elevator with num_floors=1 raises ValueError.
+        Non-int num_floors raises TypeError.
+    success
+        Every acceptance case above matches exactly.

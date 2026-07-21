@@ -1,0 +1,29 @@
+project WeekendCount
+
+task CountWeekendsInRange
+    goal
+        Count the number of Saturdays and Sundays in an inclusive date range.
+    input
+        start
+        end
+    output
+        count
+    constraint
+        Function name is weekend_count.
+        Module is impl.py.
+        Return type is int.
+        Range is inclusive of both endpoints.
+    test
+        Mon-Fri returns 0.
+        Mon-Sun returns 2.
+        Saturday alone returns 1.
+        Sunday alone returns 1.
+        Sat to Mon returns 2 (Sat + Sun).
+        A full week Mon-Mon returns 2.
+        Two full weeks return 4.
+        The same weekday twice (Wed) returns 0.
+        end earlier than start raises ValueError.
+        Non-date start raises TypeError.
+        Non-date end raises TypeError.
+    success
+        Every acceptance case above matches exactly.

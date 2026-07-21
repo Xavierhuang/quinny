@@ -1,0 +1,28 @@
+project IBAN
+
+task ValidateIBANWithMod97
+    goal
+        Return True iff a string is a well-formed IBAN with a valid mod-97 checksum.
+    input
+        s
+    output
+        is_valid
+    constraint
+        Function name is is_valid_iban.
+        Module is impl.py.
+        Return type is bool.
+        Length must be between 15 and 34 characters.
+        Only uppercase letters and digits are allowed (no whitespace, no lowercase).
+        Mod-97 rule: move first 4 chars to end, replace letters with A=10..Z=35, remainder mod 97 must equal 1.
+    test
+        A canonical valid UK IBAN returns True.
+        A canonical valid German IBAN returns True.
+        A single wrong digit anywhere breaks the checksum and returns False.
+        Too short (14 chars) returns False.
+        Too long (35 chars) returns False.
+        Lowercase input returns False (letters must be uppercase).
+        Whitespace inside returns False.
+        Empty string returns False.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

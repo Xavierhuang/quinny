@@ -1,0 +1,30 @@
+project FormatDuration
+
+task HumanReadableDurationString
+    goal
+        Format a non-negative integer number of seconds as a compact human string like "1d 2h 3m 4s".
+    input
+        seconds
+    output
+        formatted
+    constraint
+        Function name is format_duration.
+        Module is impl.py.
+        Return type is str.
+        Components used are d, h, m, s in that order.
+        Zero components are omitted, EXCEPT the whole "0 seconds" case which returns "0s".
+    test
+        0 seconds returns "0s".
+        1 second returns "1s".
+        60 seconds returns "1m".
+        3600 seconds returns "1h".
+        86400 seconds returns "1d".
+        3661 seconds returns "1h 1m 1s".
+        86461 seconds returns "1d 1m 1s" (no hours).
+        90061 seconds returns "1d 1h 1m 1s".
+        59 seconds returns "59s".
+        3599 seconds returns "59m 59s".
+        Negative seconds raises ValueError.
+        Non-int seconds raises TypeError.
+    success
+        Every acceptance case above matches exactly.

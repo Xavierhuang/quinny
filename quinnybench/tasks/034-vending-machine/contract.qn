@@ -1,0 +1,27 @@
+project VendingMachine
+
+task CoinBalanceAndDispense
+    goal
+        A vending machine that tracks coins inserted and dispenses items when balance covers price.
+    output
+        machine_state
+    constraint
+        Class name is VendingMachine.
+        Module is impl.py.
+        Constructor takes a products dict mapping name to price in cents.
+        Prices and coins are ints, in cents.
+    test
+        A fresh machine has balance 0.
+        insert_coin adds to the balance.
+        Multiple coins accumulate.
+        select an item costing exactly the balance dispenses it and returns 0 change.
+        select an item costing less than balance returns the change.
+        Balance resets to 0 after dispensing.
+        select an unknown product raises KeyError.
+        select with insufficient balance raises RuntimeError and preserves the balance.
+        refund returns the current balance and resets to 0.
+        refund on an empty balance returns 0.
+        Non-int coin raises TypeError.
+        Negative coin raises ValueError.
+    success
+        Every acceptance case above matches exactly.

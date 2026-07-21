@@ -1,0 +1,25 @@
+project TaxBrackets
+
+task ProgressiveIncomeTax
+    goal
+        Compute total income tax under a fixed progressive bracket schedule.
+    input
+        income
+    output
+        tax
+    constraint
+        Function name is calc_tax.
+        Module is impl.py.
+        Return type is float.
+    test
+        Income 0 pays 0 tax.
+        Income 10000 pays 1000 tax.
+        Income 40000 pays 4600 tax.
+        Income 100000 pays 18100 tax.
+        Income 165000 pays 33700 tax.
+        Income 200000 pays 44900 tax.
+        A one-cent overflow into the next bracket taxes only the overflow.
+        Negative income raises ValueError.
+        Non-numeric input raises TypeError.
+    success
+        Every acceptance case above matches to within 0.005 USD.

@@ -1,0 +1,26 @@
+project LuhnCheck
+
+task ValidateLuhnChecksum
+    goal
+        Determine whether a card-number string passes the Luhn checksum.
+    input
+        card_number
+    output
+        is_valid
+    constraint
+        Function name is is_valid_luhn.
+        Module is impl.py.
+        Return type is bool.
+        Spaces and hyphens in the input are ignored.
+    test
+        A known-valid card number returns True.
+        A card number with one wrong digit returns False.
+        The classical Luhn test string 79927398713 returns True.
+        A Visa test number formatted with spaces returns True.
+        A card number formatted with hyphens returns True.
+        Empty string returns False.
+        A string containing letters returns False.
+        Single-digit strings return False.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above yields the expected verdict.

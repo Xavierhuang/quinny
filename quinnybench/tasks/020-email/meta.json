@@ -1,0 +1,8 @@
+{
+  "id": "020-email",
+  "title": "Practical email validator",
+  "category": "validators",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::is_valid_email"
+}

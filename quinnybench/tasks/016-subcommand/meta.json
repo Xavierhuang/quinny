@@ -1,0 +1,8 @@
+{
+  "id": "016-subcommand",
+  "title": "Subcommand-style CLI parser",
+  "category": "cli-args",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::parse_subcommand"
+}

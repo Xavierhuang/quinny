@@ -1,0 +1,24 @@
+project Dedupe
+
+task DeduplicatePreservingOrder
+    goal
+        Return a list with duplicates removed, keeping the first occurrence.
+    input
+        items
+    output
+        deduped
+    constraint
+        Function name is dedupe.
+        Module is impl.py.
+        Return value is a list.
+    test
+        An empty list returns an empty list.
+        A list of unique items returns a copy of the same list.
+        Adjacent duplicates collapse.
+        Non-adjacent duplicates keep the first occurrence.
+        Order of first occurrences is preserved.
+        Values of different types with equal repr are NOT collapsed (1 and "1" differ).
+        Non-list input raises TypeError.
+        Unhashable elements raise TypeError.
+    success
+        Every acceptance case above matches exactly.

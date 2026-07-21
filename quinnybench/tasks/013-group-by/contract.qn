@@ -1,0 +1,25 @@
+project GroupBy
+
+task GroupRowsByKey
+    goal
+        Group a list of dict rows into buckets keyed by the value at a given field.
+    input
+        rows
+        key
+    output
+        groups
+    constraint
+        Function name is group_by.
+        Module is impl.py.
+        Return value is a dict mapping key-values to lists of rows.
+        Order within each group preserves the original row order.
+    test
+        An empty list returns an empty dict.
+        A single row groups by its key value.
+        Two rows sharing a key value land in the same group.
+        Rows with distinct key values land in separate groups.
+        A row missing the key raises KeyError.
+        Non-list rows raises TypeError.
+        Non-string key raises TypeError.
+    success
+        Every acceptance case above matches exactly.

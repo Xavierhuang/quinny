@@ -1,0 +1,8 @@
+{
+  "id": "036-iban",
+  "title": "IBAN validator (mod-97)",
+  "category": "validators",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::is_valid_iban"
+}

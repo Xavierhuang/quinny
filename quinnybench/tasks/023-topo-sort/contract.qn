@@ -1,0 +1,29 @@
+project TopologicalSort
+
+task DeterministicTopologicalSort
+    goal
+        Topologically sort a dependency graph, dependencies first, using deterministic tie-breaking.
+    input
+        deps
+    output
+        order
+    constraint
+        Function name is topo_sort.
+        Module is impl.py.
+        Return value is a list.
+        deps is a dict mapping node to list of nodes it depends on.
+        Nodes referenced only as a dependency are treated as having no deps.
+        Ties are broken by alphabetical order (sorted candidates).
+    test
+        An empty dict returns an empty list.
+        A single node with no deps returns that node.
+        A depends on B yields B then A.
+        A chain A->B->C returns C, B, A.
+        A diamond: A depends on B and C, B and C depend on D returns D, B, C, A.
+        A dependency on an implicit leaf still resolves.
+        Two independent nodes sort alphabetically.
+        A cycle raises ValueError.
+        A self-loop raises ValueError.
+        Non-dict input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

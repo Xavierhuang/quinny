@@ -1,0 +1,8 @@
+{
+  "id": "008-parse-args",
+  "title": "CLI arg parser",
+  "category": "cli-args",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::parse_args"
+}

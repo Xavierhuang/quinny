@@ -1,0 +1,31 @@
+project PivotTable
+
+task PivotRowsByRowAndColumnKeys
+    goal
+        Pivot a list of dict rows into a nested dict indexed by row-key then column-key, aggregating a value field.
+    input
+        rows
+        row_key
+        col_key
+        value_key
+        agg
+    output
+        table
+    constraint
+        Function name is pivot.
+        Module is impl.py.
+        Return value is a dict of dict.
+        Supported aggregations are sum, count, max, min.
+    test
+        Empty rows return empty dict.
+        Single row lands at [row_val][col_val].
+        Multiple rows in the same cell aggregate via sum.
+        count aggregation counts rows regardless of value.
+        max aggregation returns the maximum value.
+        min aggregation returns the minimum value.
+        Different row and column keys produce separate cells.
+        Missing row raises KeyError when it lacks any of the required keys.
+        Non-list rows raises TypeError.
+        Unknown agg raises ValueError.
+    success
+        Every acceptance case above matches exactly.

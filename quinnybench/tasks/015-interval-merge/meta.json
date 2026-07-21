@@ -1,0 +1,8 @@
+{
+  "id": "015-interval-merge",
+  "title": "Merge overlapping intervals",
+  "category": "small-algorithms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::merge_intervals"
+}

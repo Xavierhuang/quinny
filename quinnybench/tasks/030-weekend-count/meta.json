@@ -1,0 +1,8 @@
+{
+  "id": "030-weekend-count",
+  "title": "Weekend count in date range",
+  "category": "date-time",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::weekend_count"
+}

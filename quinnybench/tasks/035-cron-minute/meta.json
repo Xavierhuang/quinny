@@ -1,0 +1,8 @@
+{
+  "id": "035-cron-minute",
+  "title": "Cron minute-field parser",
+  "category": "parsers",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::parse_cron_minute"
+}

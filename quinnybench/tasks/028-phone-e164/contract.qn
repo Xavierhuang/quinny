@@ -1,0 +1,28 @@
+project PhoneE164
+
+task ValidateE164Number
+    goal
+        Return True iff a string is a valid E.164 phone number.
+    input
+        s
+    output
+        is_valid
+    constraint
+        Function name is is_valid_e164.
+        Module is impl.py.
+        Return type is bool.
+        Format is a plus sign followed by 1 to 15 digits.
+        The first digit after the plus must not be 0.
+    test
+        A common 11-digit US number returns True.
+        A 12-digit UK number returns True.
+        A 15-digit number (the max) returns True.
+        A 16-digit number is rejected.
+        Missing plus prefix returns False.
+        Bare plus with nothing after returns False.
+        Empty string returns False.
+        Plus followed by a leading zero returns False.
+        Non-digit characters after the plus return False.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

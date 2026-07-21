@@ -1,0 +1,8 @@
+{
+  "id": "021-dedupe",
+  "title": "Dedupe preserving order",
+  "category": "data-transforms",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::dedupe"
+}

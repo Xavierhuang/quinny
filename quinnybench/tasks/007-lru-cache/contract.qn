@@ -1,0 +1,25 @@
+project LRUCache
+
+task LeastRecentlyUsedCache
+    goal
+        A fixed-capacity LRU cache with get, put, and size.
+    output
+        cache_state
+    constraint
+        Class name is LRUCache.
+        Module is impl.py.
+        Constructor takes a single positional argument capacity.
+    test
+        A newly constructed cache reports size 0.
+        put adds an entry and size reflects the count.
+        get returns the value for a stored key.
+        get on a missing key raises KeyError.
+        put on an existing key replaces the value.
+        put on an existing key does not grow the size.
+        put beyond capacity evicts the least-recently-used entry.
+        get renews recency so a subsequent put evicts a different entry.
+        Capacity zero raises ValueError.
+        Negative capacity raises ValueError.
+        Non-int capacity raises TypeError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,8 @@
+{
+  "id": "031-window-max",
+  "title": "Sliding window maximum",
+  "category": "small-algorithms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::window_max"
+}

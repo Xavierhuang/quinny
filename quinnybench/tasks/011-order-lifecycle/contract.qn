@@ -1,0 +1,30 @@
+project OrderLifecycle
+
+task OrderStateMachine
+    goal
+        Enforce the allowed transitions of an order status: PENDING → PAID → SHIPPED → DELIVERED,
+        with PENDING → CANCELLED and PAID → CANCELLED as the only cancellations.
+    output
+        order_status
+    constraint
+        Class name is Order.
+        Module is impl.py.
+        Constructor takes no positional arguments.
+        Status attribute is called status.
+        Methods are pay, ship, deliver, and cancel.
+        Illegal transitions raise RuntimeError.
+    test
+        A new order starts in PENDING.
+        pay from PENDING moves to PAID.
+        pay then ship reaches SHIPPED.
+        pay then ship then deliver reaches DELIVERED.
+        cancel from PENDING moves to CANCELLED.
+        pay then cancel moves to CANCELLED.
+        ship from PENDING raises RuntimeError.
+        deliver from PENDING raises RuntimeError.
+        deliver from PAID raises RuntimeError.
+        pay after already PAID raises RuntimeError.
+        pay after CANCELLED raises RuntimeError.
+        Constructor with a positional argument raises TypeError.
+    success
+        Every acceptance case above matches exactly.

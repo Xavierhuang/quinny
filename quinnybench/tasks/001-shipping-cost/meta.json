@@ -1,0 +1,8 @@
+{
+  "id": "001-shipping-cost",
+  "title": "Shipping cost tiers",
+  "category": "business-rules",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::shipping_cost"
+}

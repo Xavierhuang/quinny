@@ -1,0 +1,8 @@
+{
+  "id": "018-elevator",
+  "title": "Elevator FIFO state machine",
+  "category": "state-machines",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::Elevator"
+}

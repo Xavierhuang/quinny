@@ -1,0 +1,29 @@
+project TopK
+
+task StableTopKLargest
+    goal
+        Return the k largest items in a list, preserving original order on ties.
+    input
+        items
+        k
+        key
+    output
+        top
+    constraint
+        Function name is top_k.
+        Module is impl.py.
+        Return value is a list, largest first.
+        Ties are broken by original insertion order (stable).
+        If k exceeds len(items), return every item sorted descending (still stable on ties).
+    test
+        Empty list with any k returns empty list.
+        k=0 returns empty list regardless of items.
+        Classic case: top 3 of [3,1,4,1,5,9,2,6] returns [9,6,5].
+        k greater than length returns all items sorted descending.
+        Ties preserve first-occurrence order.
+        Custom key function is applied to each item.
+        Negative k raises ValueError.
+        Non-int k raises TypeError.
+        Non-list items raises TypeError.
+    success
+        Every acceptance case above matches exactly.

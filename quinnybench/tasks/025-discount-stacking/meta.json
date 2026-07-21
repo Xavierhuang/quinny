@@ -1,0 +1,8 @@
+{
+  "id": "025-discount-stacking",
+  "title": "Discount stacking rules",
+  "category": "business-rules",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::apply_discounts"
+}

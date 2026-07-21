@@ -1,0 +1,8 @@
+{
+  "id": "022-iso-week",
+  "title": "ISO 8601 week date",
+  "category": "date-time",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::iso_week"
+}

@@ -1,0 +1,28 @@
+project PasswordPolicy
+
+task ValidatePasswordAgainstPolicy
+    goal
+        Return the list of policy rules a password fails, in a fixed order.
+    input
+        password
+    output
+        failing_rules
+    constraint
+        Function name is validate_password.
+        Module is impl.py.
+        Return value is a list of strings.
+        Rule ids are min_length, has_upper, has_lower, has_digit, has_special.
+        Special chars are exactly !@#$%^&*()-_+=.
+        Result preserves the fixed order min_length, has_upper, has_lower, has_digit, has_special.
+    test
+        A strong password returns an empty list.
+        An empty string fails every rule.
+        A short string fails only min_length when it satisfies the character rules.
+        Missing uppercase fails only has_upper.
+        Missing lowercase fails only has_lower.
+        Missing digit fails only has_digit.
+        Missing special fails only has_special.
+        A four-char weak password fails min_length has_upper has_digit has_special.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

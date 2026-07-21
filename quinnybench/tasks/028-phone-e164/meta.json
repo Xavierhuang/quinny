@@ -1,0 +1,8 @@
+{
+  "id": "028-phone-e164",
+  "title": "E.164 phone validator",
+  "category": "validators",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::is_valid_e164"
+}

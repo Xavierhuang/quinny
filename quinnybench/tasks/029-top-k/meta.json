@@ -1,0 +1,8 @@
+{
+  "id": "029-top-k",
+  "title": "Stable top-K",
+  "category": "data-transforms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::top_k"
+}

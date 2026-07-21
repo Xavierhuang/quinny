@@ -1,0 +1,8 @@
+{
+  "id": "012-query-string",
+  "title": "HTTP query string parser",
+  "category": "parsers",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::parse_query_string"
+}

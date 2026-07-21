@@ -1,0 +1,34 @@
+project DiscountStacking
+
+task ApplyStackableDiscounts
+    goal
+        Apply discount rules to a subtotal: pick the best non-stackable, then apply every stackable in order.
+    input
+        subtotal
+        discounts
+    output
+        total
+    constraint
+        Function name is apply_discounts.
+        Module is impl.py.
+        Return type is float.
+        Discount is a dict with keys type (percent or flat), value, stackable.
+        Percent discounts multiply, flat discounts subtract.
+        Non-stackables: apply only the ONE that saves the customer the most.
+        Stackables: apply every one, in the order given.
+        Result is clamped to 0 (never negative).
+    test
+        Empty discounts returns subtotal unchanged.
+        A single stackable percent applies once.
+        A single stackable flat subtracts.
+        Two stackable percents multiply (100 minus 10% then minus 20% is 72).
+        Two stackable flats sum (100 minus 15 minus 20 is 65).
+        Two non-stackable discounts: only the one giving the biggest savings is used.
+        Non-stackable is applied before stackables.
+        Discounts exceeding the subtotal clamp to 0, not negative.
+        Zero subtotal stays 0.
+        Negative subtotal raises ValueError.
+        Unknown discount type raises ValueError.
+        Non-list discounts raises TypeError.
+    success
+        Every acceptance case above matches to within 0.005.

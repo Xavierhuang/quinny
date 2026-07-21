@@ -1,0 +1,30 @@
+project InsurancePremium
+
+task CalculatePremiumByAgeAndTier
+    goal
+        Compute an annual insurance premium from age and coverage tier.
+    input
+        age
+        tier
+    output
+        premium
+    constraint
+        Function name is calc_premium.
+        Module is impl.py.
+        Return type is float.
+        Tiers are basic, standard, premium with base rates 100, 250, 500.
+        Age factor: below 25 is 1.5x, 25 to 40 is 1.0x, 41 to 60 is 1.3x, 61 and above is 1.8x.
+    test
+        Age 30 basic returns 100.
+        Age 30 standard returns 250.
+        Age 30 premium returns 500.
+        Age 24 basic returns 150 (1.5x factor).
+        Age 41 basic returns 130 (1.3x factor).
+        Age 60 basic returns 130 (still 1.3x).
+        Age 61 basic returns 180 (1.8x).
+        Age 25 boundary uses 1.0x, not 1.5x.
+        Negative age raises ValueError.
+        Non-int age raises TypeError.
+        Unknown tier raises ValueError.
+    success
+        Every acceptance case above matches to within 0.005.

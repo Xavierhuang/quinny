@@ -1,0 +1,8 @@
+{
+  "id": "038-format-duration",
+  "title": "Human-readable duration formatter",
+  "category": "date-time",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::format_duration"
+}

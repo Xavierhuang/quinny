@@ -1,0 +1,8 @@
+{
+  "id": "027-ini-parse",
+  "title": "INI file parser",
+  "category": "parsers",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::parse_ini"
+}

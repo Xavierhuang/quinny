@@ -1,0 +1,8 @@
+{
+  "id": "010-password-policy",
+  "title": "Password policy validator",
+  "category": "validators",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::validate_password"
+}

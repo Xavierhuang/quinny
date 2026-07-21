@@ -1,0 +1,32 @@
+project GNUArgs
+
+task ParseArgvWithSpecifiedValueOptions
+    goal
+        Parse argv given a set of option names that TAKE VALUES, so --name VAL and -n VAL work.
+    input
+        argv
+        value_options
+    output
+        parsed
+    constraint
+        Function name is parse_gnu_args.
+        Module is impl.py.
+        Return value is a dict with keys flags, options, positional.
+        --name=VAL is always an option regardless of value_options.
+        --name (no =) consumes next token as value iff name is in value_options.
+        -x consumes next token as value iff x is in value_options.
+        Bare -- ends option parsing.
+    test
+        Empty argv returns empty buckets.
+        Long flag without value: --verbose.
+        Long option with equals: --count=3.
+        Long option needing value: --count 3 when count is a value option.
+        Short flag: -v.
+        Short option needing value: -o out when o is a value option.
+        Positional args pass through.
+        Bare -- ends options.
+        Missing value after value option raises ValueError.
+        Non-list argv raises TypeError.
+        Non-set value_options raises TypeError.
+    success
+        Every acceptance case above matches exactly.

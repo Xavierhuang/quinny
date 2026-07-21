@@ -1,0 +1,8 @@
+{
+  "id": "034-vending-machine",
+  "title": "Vending machine",
+  "category": "state-machines",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::VendingMachine"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "039-token-bucket",
+  "title": "Token-bucket rate limiter",
+  "category": "small-algorithms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::TokenBucket"
+}

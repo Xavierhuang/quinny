@@ -1,0 +1,31 @@
+project HelpRenderer
+
+task RenderAlignedHelpText
+    goal
+        Render an aligned help text for a program from a list of option specs.
+    input
+        program
+        options
+    output
+        help_text
+    constraint
+        Function name is render_help.
+        Module is impl.py.
+        Return type is str.
+        Each option is a dict with keys short, long, value, help.
+        short and value may be None; long is required.
+        Left column format: "  -x, --long VALUE" (two spaces, short if present, --long, value in caps if present).
+        When short is None, left column pads with 4 spaces where "-x, " would go.
+        Right column (help text) is aligned via a common gutter (two spaces past the widest left column).
+    test
+        A single long-only flag renders correctly.
+        Header line reads "Usage: <program> [OPTIONS]" followed by a blank line and "Options:".
+        A short + long flag pair.
+        A long option with a value renders "--long VALUE".
+        A short + long with value renders "-x, --long VALUE".
+        Multiple options are gutter-aligned to the widest left column.
+        Empty options list still emits the header and Options: line.
+        Non-string program raises TypeError.
+        Non-list options raises TypeError.
+    success
+        Every acceptance case above matches exactly.

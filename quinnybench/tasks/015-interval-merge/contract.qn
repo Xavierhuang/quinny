@@ -1,0 +1,28 @@
+project IntervalMerge
+
+task MergeOverlappingIntervals
+    goal
+        Merge overlapping and touching intervals into a sorted list of disjoint intervals.
+    input
+        intervals
+    output
+        merged
+    constraint
+        Function name is merge_intervals.
+        Module is impl.py.
+        Return value is a list of two-element lists.
+        Result is sorted by start ascending.
+        Intervals with equal endpoints are treated as touching and are merged.
+    test
+        Empty input returns empty output.
+        A single interval is returned unchanged.
+        Two overlapping intervals merge into one.
+        Two touching intervals merge into one.
+        A batch with a gap yields two intervals.
+        Unsorted input is sorted before merging.
+        The canonical LeetCode example merges correctly.
+        Non-list input raises TypeError.
+        An interval whose start exceeds its end raises ValueError.
+        A non-two-element sub-list raises ValueError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,8 @@
+{
+  "id": "003-traffic-light",
+  "title": "Traffic light state machine",
+  "category": "state-machines",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::TrafficLight"
+}

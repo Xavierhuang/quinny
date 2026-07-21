@@ -1,0 +1,25 @@
+project AgeFromDOB
+
+task ComputeAgeInYears
+    goal
+        Compute an integer age in years from a date of birth as of a reference date.
+    input
+        dob
+        as_of
+    output
+        age
+    constraint
+        Function name is age_as_of.
+        Module is impl.py.
+        Return type is int.
+    test
+        Same-day birth returns 0.
+        Age increments exactly on the birthday.
+        The day before a birthday returns the pre-increment age.
+        A February 29 birthday increments on March 1 in a non-leap year.
+        A February 29 birthday counts as unchanged on February 28 in a non-leap year.
+        A DOB in the future raises ValueError.
+        Non-date DOB raises TypeError.
+        Non-date as_of raises TypeError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,28 @@
+project TCPHandshake
+
+task ClientSideTCPHandshake
+    goal
+        Model the client-side TCP handshake: CLOSED → SYN_SENT → ESTABLISHED → CLOSED.
+    output
+        state
+    constraint
+        Class name is TCPConnection.
+        Module is impl.py.
+        Constructor takes no positional arguments.
+        States are CLOSED, SYN_SENT, ESTABLISHED.
+        Methods are open, syn_ack, close.
+        Illegal transitions raise RuntimeError.
+    test
+        A fresh connection is in CLOSED.
+        open from CLOSED moves to SYN_SENT.
+        syn_ack from SYN_SENT moves to ESTABLISHED.
+        close from ESTABLISHED moves to CLOSED.
+        Full cycle open-syn_ack-close returns to CLOSED.
+        syn_ack from CLOSED raises RuntimeError.
+        close from CLOSED raises RuntimeError.
+        open from SYN_SENT raises RuntimeError.
+        open from ESTABLISHED raises RuntimeError.
+        close from SYN_SENT raises RuntimeError.
+        Constructor with an argument raises TypeError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,8 @@
+{
+  "id": "023-topo-sort",
+  "title": "Deterministic topological sort",
+  "category": "small-algorithms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::topo_sort"
+}

@@ -1,0 +1,28 @@
+project INIParse
+
+task ParseINIString
+    goal
+        Parse an INI-format string into a nested dict of sections and their key/value pairs.
+    input
+        text
+    output
+        parsed
+    constraint
+        Function name is parse_ini.
+        Module is impl.py.
+        Return value is a dict of str to dict of str to str.
+        Keys and values are trimmed of surrounding whitespace.
+    test
+        Empty string returns empty dict.
+        A single section with one key/value.
+        Multiple sections with multiple keys.
+        Keys and values are stripped of surrounding whitespace.
+        Comment lines starting with ; are ignored.
+        Comment lines starting with # are ignored.
+        Blank lines are ignored.
+        Duplicate keys within a section: last value wins.
+        Keys before any section belong to the empty-string section.
+        A line without an equals sign raises ValueError.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,8 @@
+{
+  "id": "014-age-from-dob",
+  "title": "Age from date of birth",
+  "category": "date-time",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::age_as_of"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "019-csv-row",
+  "title": "RFC 4180 CSV row parser",
+  "category": "parsers",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::parse_csv_row"
+}

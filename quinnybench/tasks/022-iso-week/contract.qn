@@ -1,0 +1,25 @@
+project ISOWeek
+
+task ComputeISOWeekDate
+    goal
+        Compute the ISO 8601 week-date tuple (year, week, weekday) for a given date.
+    input
+        d
+    output
+        iso_tuple
+    constraint
+        Function name is iso_week.
+        Module is impl.py.
+        Return type is a tuple of three ints.
+        weekday uses 1=Monday through 7=Sunday.
+        ISO year may differ from calendar year around January 1.
+    test
+        Monday 2024-01-01 returns 2024 week 1 weekday 1.
+        Sunday 2024-01-07 returns 2024 week 1 weekday 7.
+        Monday 2024-01-08 returns 2024 week 2 weekday 1.
+        Sunday 2023-01-01 belongs to ISO year 2022 week 52 weekday 7.
+        Tuesday 2024-12-31 belongs to ISO year 2025 week 1 weekday 2.
+        Thursday 2020-12-31 returns 2020 week 53 weekday 4.
+        Non-date input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

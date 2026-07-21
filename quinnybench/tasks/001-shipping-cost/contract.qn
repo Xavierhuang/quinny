@@ -1,0 +1,26 @@
+project ShippingCost
+
+task ComputeShippingCost
+    goal
+        Compute a shipping cost from a package weight in kilograms.
+    input
+        weight_kg
+    output
+        cost_usd
+    constraint
+        Result is a non-negative float in USD.
+        Function name is shipping_cost.
+        Module is impl.py.
+    test
+        weight 0 returns 5.00.
+        weight 0.5 returns 5.00.
+        weight 1.0 returns 5.00.
+        weight 1.5 returns 5.75.
+        weight 5.0 returns 11.00.
+        weight 10.0 returns 18.50.
+        weight 10.5 returns 21.00.
+        weight 25.0 returns 50.00.
+        Negative weight raises ValueError.
+        Non-numeric input raises TypeError.
+    success
+        Every acceptance case above matches to within 0.005 USD.

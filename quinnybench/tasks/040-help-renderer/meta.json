@@ -1,0 +1,8 @@
+{
+  "id": "040-help-renderer",
+  "title": "Aligned CLI help renderer",
+  "category": "cli-args",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::render_help"
+}

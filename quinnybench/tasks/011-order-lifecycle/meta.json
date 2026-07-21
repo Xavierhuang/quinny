@@ -1,0 +1,8 @@
+{
+  "id": "011-order-lifecycle",
+  "title": "Order lifecycle state machine",
+  "category": "state-machines",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::Order"
+}

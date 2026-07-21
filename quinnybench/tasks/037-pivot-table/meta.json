@@ -1,0 +1,8 @@
+{
+  "id": "037-pivot-table",
+  "title": "Pivot table with aggregation",
+  "category": "data-transforms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::pivot"
+}

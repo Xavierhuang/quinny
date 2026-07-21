@@ -1,0 +1,29 @@
+project EnvFallback
+
+task ConfigWithArgvEnvDefaults
+    goal
+        Resolve each config key from argv, else env, else defaults.
+    input
+        argv
+        env
+        defaults
+    output
+        config
+    constraint
+        Function name is get_config.
+        Module is impl.py.
+        Return value is a dict.
+        argv option format is --key=value.
+        Env var name is the key uppercased with dashes replaced by underscores.
+    test
+        No source data returns defaults unchanged.
+        argv overrides the default.
+        env overrides the default when argv is absent.
+        argv wins over env when both are present.
+        Multiple defaulted keys all appear in the output.
+        A key with a dash maps to an env var with underscores.
+        Non-list argv raises TypeError.
+        Non-dict env raises TypeError.
+        Non-dict defaults raises TypeError.
+    success
+        Every acceptance case above matches exactly.

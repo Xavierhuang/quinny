@@ -1,0 +1,8 @@
+{
+  "id": "007-lru-cache",
+  "title": "LRU cache",
+  "category": "small-algorithms",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::LRUCache"
+}

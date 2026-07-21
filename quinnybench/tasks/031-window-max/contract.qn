@@ -1,0 +1,27 @@
+project WindowMax
+
+task SlidingWindowMax
+    goal
+        Compute the maximum in every contiguous window of size k in a list.
+    input
+        nums
+        k
+    output
+        maxes
+    constraint
+        Function name is window_max.
+        Module is impl.py.
+        Return value is a list of length len(nums) - k + 1.
+    test
+        Classic LeetCode example: [1,3,-1,-3,5,3,6,7] with k=3 returns [3,3,5,5,6,7].
+        k=1 returns a copy of nums.
+        k equal to len(nums) returns a single-element list of the max.
+        A single element with k=1 returns that element.
+        All equal returns k-length list of that value.
+        k=0 raises ValueError.
+        k larger than len(nums) raises ValueError.
+        Empty nums with k=1 raises ValueError.
+        Non-list nums raises TypeError.
+        Non-int k raises TypeError.
+    success
+        Every acceptance case above matches exactly.

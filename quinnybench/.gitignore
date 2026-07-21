@@ -1,0 +1,23 @@
+# Local venv — reproducible via reproduce.sh or `pip install -r requirements.txt`.
+.venv/
+
+# Fabricated demo output (regenerable via `python -m viz.demo`).
+results/demo/
+
+# Rendered site (regenerable via `python -m viz.build <run>`). Deployed
+# separately to the gh-pages branch — not tracked on main.
+viz/out/
+
+# Real benchmark runs — commit selectively if you want an audit trail.
+# Uncomment to track everything under results/:
+# !results/
+
+# Secrets.
+.env
+
+# Python bytecode caches.
+__pycache__/
+*.pyc
+
+# Editor debris.
+.DS_Store

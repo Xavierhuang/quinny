@@ -1,0 +1,27 @@
+project SubcommandDispatcher
+
+task ParseArgvWithSubcommand
+    goal
+        Parse an argv list into a subcommand plus flags, options, and remaining positional args.
+    input
+        argv
+    output
+        parsed
+    constraint
+        Function name is parse_subcommand.
+        Module is impl.py.
+        Return value is a dict with keys subcommand, flags, options, positional.
+        subcommand is str or None. flags is a set. options is a dict. positional is a list.
+        The first bare (non-dash) token before -- becomes the subcommand.
+    test
+        Empty argv returns subcommand None with empty rest.
+        A single bare token becomes the subcommand.
+        Bare token then another bare goes to subcommand and positional.
+        Flags before the subcommand are captured.
+        Flags after the subcommand are captured.
+        A dash-dash-key-equals-value option is captured.
+        A dash-dash by itself ends option parsing and yields no subcommand from later tokens.
+        A positional after a discovered subcommand is preserved.
+        Non-list argv raises TypeError.
+    success
+        Every acceptance case above matches exactly.

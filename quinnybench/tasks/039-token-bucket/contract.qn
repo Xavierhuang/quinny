@@ -1,0 +1,25 @@
+project TokenBucket
+
+task TokenBucketRateLimiter
+    goal
+        A token-bucket rate limiter with capacity and constant refill, driven by an external clock.
+    output
+        bucket_state
+    constraint
+        Class name is TokenBucket.
+        Module is impl.py.
+        Constructor takes capacity (int > 0) and refill_per_sec (positive float).
+        try_take(now, n=1) refills based on now then attempts to take n tokens.
+        Bucket starts full; refill never exceeds capacity.
+    test
+        A fresh bucket has capacity tokens available.
+        try_take of 1 token at time 0 succeeds and leaves cap-1.
+        try_take of more than available returns False and does not deduct.
+        A single 1-token request that empties the bucket then a second 1-token request at the same time fails.
+        try_take at time 1s with refill=1 gives back one token.
+        Refill is capped at capacity even after a long wait.
+        Zero capacity raises ValueError.
+        Negative refill raises ValueError.
+        Non-int capacity raises TypeError.
+    success
+        Every acceptance case above matches exactly.

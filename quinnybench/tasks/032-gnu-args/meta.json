@@ -1,0 +1,8 @@
+{
+  "id": "032-gnu-args",
+  "title": "GNU-style options with values",
+  "category": "cli-args",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::parse_gnu_args"
+}

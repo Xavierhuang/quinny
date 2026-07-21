@@ -1,0 +1,28 @@
+project CronMinute
+
+task ParseCronMinuteField
+    goal
+        Parse the MINUTE field of a cron expression into a sorted list of matching minute-of-hour values.
+    input
+        field
+    output
+        minutes
+    constraint
+        Function name is parse_cron_minute.
+        Module is impl.py.
+        Return value is a sorted list of ints in 0..59.
+        Supported syntax: *, single number, range a-b, step */N, comma-separated combinations.
+    test
+        Asterisk expands to every minute 0..59.
+        A single number returns a one-element list.
+        A range like 10-14 returns 10..14.
+        A step like */15 returns 0, 15, 30, 45.
+        A step over a range 5-15/5 returns 5, 10, 15.
+        A comma list 0,15,30 returns those three values.
+        Comma list merges and de-duplicates.
+        Result is sorted ascending.
+        A value above 59 raises ValueError.
+        A malformed field raises ValueError.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

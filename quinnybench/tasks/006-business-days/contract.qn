@@ -1,0 +1,31 @@
+project BusinessDays
+
+task AddBusinessDays
+    goal
+        Advance a date by N business days, skipping weekends.
+    input
+        start_date
+        n
+    output
+        result_date
+    constraint
+        Function name is add_business_days.
+        Module is impl.py.
+        Input start_date is a datetime.date. Input n is an int.
+        Return type is datetime.date.
+        Business days are Monday through Friday.
+    test
+        n=0 returns start_date unchanged (weekday).
+        n=0 returns start_date unchanged even if start is a weekend.
+        Friday + 1 lands on the following Monday.
+        Friday + 2 lands on the following Tuesday.
+        Friday + 5 lands on the following Friday.
+        Saturday + 1 lands on the following Monday.
+        Sunday + 1 lands on the following Monday.
+        Saturday + 2 lands on the following Tuesday.
+        Monday - 1 lands on the previous Friday.
+        Monday - 3 lands on the previous Wednesday.
+        A non-date start_date raises TypeError.
+        A non-int n raises TypeError.
+    success
+        Every acceptance case above matches exactly.

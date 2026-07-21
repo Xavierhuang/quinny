@@ -1,0 +1,8 @@
+{
+  "id": "013-group-by",
+  "title": "Group rows by key",
+  "category": "data-transforms",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::group_by"
+}

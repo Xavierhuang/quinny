@@ -1,0 +1,23 @@
+project TrafficLight
+
+task TrafficLightStateMachine
+    goal
+        A three-state traffic light that cycles RED → GREEN → YELLOW → RED.
+    output
+        current_state
+    constraint
+        Class name is TrafficLight.
+        Module is impl.py.
+        States are the strings RED, GREEN, YELLOW.
+        Constructor takes no positional arguments.
+    test
+        A freshly constructed light reports RED.
+        One tick from RED yields GREEN.
+        Two ticks from RED yield YELLOW.
+        Three ticks from RED yield RED again.
+        Seven ticks yield GREEN.
+        reset() from any state returns to RED.
+        reset() from RED stays RED.
+        Constructor with a positional argument raises TypeError.
+    success
+        Every acceptance case above matches the expected state.

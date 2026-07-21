@@ -1,0 +1,26 @@
+project FlattenDict
+
+task FlattenNestedDict
+    goal
+        Flatten a nested dict into a flat dict of dotted keys.
+    input
+        source
+    output
+        flat
+    constraint
+        Function name is flatten_dict.
+        Module is impl.py.
+        Separator argument is sep with default ".".
+    test
+        Empty dict returns empty dict.
+        A single top-level key survives unchanged.
+        A two-level nesting joins keys with a dot.
+        A three-level nesting joins all three keys.
+        Non-dict values are kept as-is (lists are not recursed).
+        Keys containing the separator are preserved verbatim.
+        Empty inner dicts disappear (contribute no keys).
+        A custom separator is honoured.
+        Non-dict input raises TypeError.
+        None input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

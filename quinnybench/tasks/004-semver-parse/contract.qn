@@ -1,0 +1,27 @@
+project SemverParse
+
+task ParseSemverString
+    goal
+        Parse a semver 2.0 version string into a structured dict.
+    input
+        version
+    output
+        parts
+    constraint
+        Function name is parse_semver.
+        Module is impl.py.
+        Return value is a dict with keys major, minor, patch, prerelease, buildmetadata.
+    test
+        parse_semver 1.0.0 returns major 1 minor 0 patch 0 no pre or build.
+        parse_semver 1.2.3 returns major 1 minor 2 patch 3.
+        parse_semver 1.2.3-alpha returns prerelease alpha.
+        parse_semver 1.2.3-alpha.1 returns prerelease alpha.1.
+        parse_semver 1.2.3+build.5 returns buildmetadata build.5.
+        parse_semver 1.2.3-rc.1+meta returns both prerelease and buildmetadata.
+        A leading zero in a numeric component raises ValueError.
+        Missing patch component raises ValueError.
+        A trailing dot after patch raises ValueError.
+        Empty string raises ValueError.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

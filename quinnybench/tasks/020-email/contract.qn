@@ -1,0 +1,33 @@
+project EmailValidator
+
+task ValidatePracticalEmail
+    goal
+        Boolean: whether a string looks like a practical email address.
+    input
+        s
+    output
+        is_valid
+    constraint
+        Function name is is_valid_email.
+        Module is impl.py.
+        Return type is bool.
+        Local part characters allowed: alphanumeric, dot, underscore, percent, plus, hyphen.
+        Local part must not start or end with a dot, or contain consecutive dots.
+        Domain must contain at least one dot, each label alphanumeric or hyphen without leading or trailing hyphen, TLD at least 2 letters.
+    test
+        A simple valid email returns True.
+        A dotted local part returns True.
+        A plus tag returns True.
+        A multi-label TLD returns True.
+        Leading dot in local part returns False.
+        Trailing dot in local part returns False.
+        Consecutive dots in local part return False.
+        Domain without a dot returns False.
+        Leading hyphen in a domain label returns False.
+        Trailing hyphen in a domain label returns False.
+        Empty string returns False.
+        Empty local part returns False.
+        Empty domain returns False.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

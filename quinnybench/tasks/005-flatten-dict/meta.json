@@ -1,0 +1,8 @@
+{
+  "id": "005-flatten-dict",
+  "title": "Flatten nested dict",
+  "category": "data-transforms",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::flatten_dict"
+}

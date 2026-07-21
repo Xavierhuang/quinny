@@ -1,0 +1,8 @@
+{
+  "id": "024-env-fallback",
+  "title": "Config with env-var fallback",
+  "category": "cli-args",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::get_config"
+}

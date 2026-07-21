@@ -1,0 +1,27 @@
+project ParseArgs
+
+task ParseCommandLineArguments
+    goal
+        Parse a list of command-line-style tokens into flags, options, and positional args.
+    input
+        argv
+    output
+        parsed
+    constraint
+        Function name is parse_args.
+        Module is impl.py.
+        Return value is a dict with keys flags, options, positional.
+        flags is a set of strings, options is a dict of str to str, positional is a list of str.
+    test
+        Empty argv returns empty flags, options, and positional.
+        A single bare token becomes a positional arg.
+        A long form dash-dash-name becomes a flag.
+        A short form dash-a becomes a flag.
+        A dash-dash-name-equals-value becomes an option.
+        Multiple mixed tokens land in the right buckets.
+        A dash-dash by itself ends option parsing (rest are positional).
+        A positional token before a dash-dash is preserved.
+        A later dash-dash-key-equals-value overrides an earlier one.
+        Non-list input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

@@ -1,0 +1,8 @@
+{
+  "id": "009-tax-brackets",
+  "title": "Progressive tax brackets",
+  "category": "business-rules",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::calc_tax"
+}

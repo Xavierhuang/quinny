@@ -1,0 +1,26 @@
+project CSVRow
+
+task ParseSingleCSVRow
+    goal
+        Parse a single RFC 4180 CSV row into a list of field strings.
+    input
+        row
+    output
+        fields
+    constraint
+        Function name is parse_csv_row.
+        Module is impl.py.
+        Return value is a list of strings.
+    test
+        Empty string returns a single empty field.
+        Single unquoted field is returned as-is.
+        Three comma-separated fields split correctly.
+        Empty middle field is preserved.
+        A trailing empty field is preserved.
+        A quoted field containing a comma keeps the comma inside the field.
+        A doubled quote inside a quoted field decodes to a single quote.
+        Unclosed quote raises ValueError.
+        Junk characters after a closing quote raise ValueError.
+        Non-string input raises TypeError.
+    success
+        Every acceptance case above matches exactly.

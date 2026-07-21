@@ -1,0 +1,32 @@
+project SubscriptionProration
+
+task ProrateMonthlyCharge
+    goal
+        Charge a monthly subscription pro-rated for a mid-month signup.
+    input
+        amount
+        day_of_month
+        days_in_month
+    output
+        charge
+    constraint
+        Function name is charge.
+        Module is impl.py.
+        Return type is float.
+        Charge equals amount times (days_in_month - day_of_month + 1) over days_in_month.
+    test
+        Signup on day 1 of a 30-day month charges the full amount.
+        Signup on the last day of a 30-day month charges one day.
+        Signup on day 15 of a 30-day month charges 16 out of 30.
+        A 31-day month full charge equals amount.
+        A 28-day month full charge equals amount.
+        Fractional days-in-month arithmetic is exact.
+        Zero amount always returns zero.
+        Negative amount raises ValueError.
+        day_of_month less than 1 raises ValueError.
+        day_of_month greater than days_in_month raises ValueError.
+        days_in_month outside 28 to 31 raises ValueError.
+        Non-numeric amount raises TypeError.
+        Non-int day_of_month raises TypeError.
+    success
+        Every acceptance case above matches to within 0.005.

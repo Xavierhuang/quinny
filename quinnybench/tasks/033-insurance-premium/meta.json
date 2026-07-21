@@ -1,0 +1,8 @@
+{
+  "id": "033-insurance-premium",
+  "title": "Insurance premium by age tier",
+  "category": "business-rules",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::calc_premium"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "006-business-days",
+  "title": "Business-day offset",
+  "category": "date-time",
+  "difficulty": "medium",
+  "language": "python",
+  "entrypoint": "impl.py::add_business_days"
+}

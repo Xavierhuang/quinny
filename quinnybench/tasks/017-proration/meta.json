@@ -1,0 +1,8 @@
+{
+  "id": "017-proration",
+  "title": "Subscription proration",
+  "category": "business-rules",
+  "difficulty": "easy",
+  "language": "python",
+  "entrypoint": "impl.py::charge"
+}
