@@ -2,6 +2,8 @@
 
 **An executable specification language.**
 
+![The Quinny verify loop](docs/quinnyloop.png)
+
 Created by **[LingCode Baby](https://lingcode.dev/baby.html)** — a macOS IDE
 that embeds Quinny as its built-in verify loop.
 
