@@ -39,15 +39,30 @@ def _call(user: str) -> str:
     # single non-streaming reply >~100s) AND collect text deltas ourselves —
     # Kimi emits `thinking` blocks whose deltas crash the SDK's high-level
     # text_stream accumulator (`content.thinking += None`). We just skip them.
-    stream = c.messages.create(model=MODEL, max_tokens=16000,
+    # max_tokens must clear BOTH the (adaptive, uncapped) thinking budget AND the
+    # emitted code, or a thinking-heavy model (Kimi K3) burns the whole budget
+    # reasoning and gets truncated before any ```python block — yielding an empty
+    # parse that grades 0%, which looks like "wrote broken code" but is really
+    # "ran out of room". 32k gives thinking + code headroom; override per model.
+    max_toks = int(os.environ.get("QUINNY_MAX_TOKENS", "32000"))
+    # Explicit long timeout: the K3/LingModel proxy can go quiet for minutes on a
+    # thinking-heavy generation, and httpx's default read-timeout kills the stream
+    # mid-verify-loop. 600s tolerates the slow upstream without hanging forever.
+    stream = c.messages.create(model=MODEL, max_tokens=max_toks,
                                system=bench._RAW_SYSTEM_PROMPT,
                                messages=[{"role": "user", "content": user}],
-                               stream=True, **thinking_kwargs(MODEL))
+                               stream=True, timeout=600, **thinking_kwargs(MODEL))
     parts = []
+    stop_reason = None
     for ev in stream:
         if (ev.type == "content_block_delta"
                 and getattr(ev.delta, "type", None) == "text_delta"):
             parts.append(ev.delta.text)
+        elif ev.type == "message_delta" and getattr(ev, "delta", None) is not None:
+            stop_reason = getattr(ev.delta, "stop_reason", None) or stop_reason
+    # Truncation must be LOUD, not a silent 0% — it's a harness limit, not a model verdict.
+    if stop_reason == "max_tokens":
+        print(f"    ⚠️  truncated at max_tokens={max_toks} (raise QUINNY_MAX_TOKENS)", flush=True)
     return "".join(parts)
 
 
